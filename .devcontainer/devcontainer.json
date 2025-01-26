@@ -15,7 +15,7 @@
 	        }
 	    },
 	
-	"postCreateCommand": "sudo chown vscode .magic && magic install",
+	"postCreateCommand": "magic install",
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
