@@ -15,8 +15,7 @@
 	        }
 	    },
 	
-	"mounts": ["source=${localWorkspaceFolderBasename}-magic,target=${containerWorkspaceFolder}/.magic,type=volume"],
-    "postCreateCommand": "sudo chown vscode .mafic && magic install",
+	"postCreateCommand": "sudo chown vscode .magic && magic install",
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
