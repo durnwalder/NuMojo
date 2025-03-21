@@ -10,7 +10,7 @@
 from algorithm import parallelize, vectorize
 from memory import UnsafePointer, memcpy, memset_zero
 from random import random_float64
-from sys import simdwidthof
+from sys import simdwidthof, sizeof
 from python import PythonObject, Python
 
 from numojo.core.flags import Flags
@@ -169,9 +169,9 @@ struct Matrix[dtype: DType = DType.float64](
         if data.flags["C_CONTIGUOUS"]:
             for i in range(data.shape[0]):
                 memcpy(
-                    self._buf.ptr.offset(i * self.shape[0]),
-                    data._buf.ptr.offset(i * data.shape[0]),
-                    self.shape[0],
+                    self._buf.ptr.offset(i * self.strides[0]),
+                    data._buf.ptr.offset(i * data.strides[0]),
+                    self.shape[1] * sizeof[dtype](),
                 )
         else:
             for i in range(data.shape[0]):
