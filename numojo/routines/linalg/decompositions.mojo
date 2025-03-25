@@ -2,7 +2,8 @@
 # Decompositions
 # ===----------------------------------------------------------------------=== #
 
-from algorithm import parallelize
+from sys import simdwidthof
+from algorithm import parallelize, vectorize
 import math as builtin_math
 
 from numojo.core.ndarray import NDArray
@@ -15,42 +16,54 @@ fn compute_householder[
 ](
     mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
 ) raises -> None:
-    var sqrt2: SIMD[dtype, 1] = 1.4142135623730951
+    alias simd_width = simdwidthof[dtype]()
+    var sqrt2: SIMD[dtype, simd_width] = 1.4142135623730951
     var rRows = R.shape[0]
 
-    for i in range(row, rRows):
-        var val = R._load(i, column)
-        H._store(i, column, val)
-        R._store(i, column, 0.0)
+    @parameter
+    fn load_store_vec[simd_width: Int](i: Int):
+        var val = R._load[simd_width](i, column)
+        H._store[simd_width](i, column, val)
+        R._store[simd_width](i, column, 0.0)
 
-    var norm: Scalar[dtype] = 0.0
-    for i in range(rRows):
-        norm += H._load(i, column) ** 2
-    norm = builtin_math.sqrt(norm)
+    vectorize[load_store_vec, simd_width](rRows - row)
+
+    var norm = Scalar[dtype](0)
+
+    @parameter
+    fn calculate_norm[width: Int](n: Int):
+        norm += (H._load[width=width](n, column)**2).reduce_add()
+
+    vectorize[calculate_norm, simd_width](rRows)
+
     if row == rRows - 1 or norm == 0:
-        first_element = H._load(row, column)
+        var first_element = H._load(row, column)
         R._store(row, column, -first_element)
         H._store(row, column, sqrt2)
         return
 
-    scale = 1.0 / norm
+    var scale = 1.0 / norm
     if H._load(row, column) < 0:
         scale = -scale
 
     R._store(row, column, -1 / scale)
 
-    for i in range(row, rRows):
-        H._store(i, column, H._load(i, column) * scale)
+    @parameter
+    fn scale_vec[simd_width: Int](i: Int):
+        H._store[simd_width](i, column, H._load[simd_width](i, column) * scale)
 
-    increment = H._load(row, column) + 1.0
+    vectorize[scale_vec, simd_width](rRows - row)
+
+    var increment = H._load(row, column) + 1.0
     H._store(row, column, increment)
 
-    s = builtin_math.sqrt(1.0 / increment)
+    var s = builtin_math.sqrt(1.0 / increment)
 
-    for i in range(row, rRows):
-        H._store(i, column, H._load(i, column) * s)
+    @parameter
+    fn scale_increment_vec[simd_width: Int](i: Int):
+        H._store[simd_width](i, column, H._load[simd_width](i, column) * s)
 
-
+    vectorize[scale_increment_vec, simd_width](rRows - row)
 fn compute_qr[
     dtype: DType
 ](
@@ -70,8 +83,38 @@ fn compute_qr[
         for i in range(row_start, aRows):
             val = A._load(i, j) - H._load(i, work_index) * dot
             A._store(i, j, val)
+"""
+fn compute_qr[
+    dtype: DType
+](
+    mut H: Matrix[dtype],
+    work_index: Int,
+    mut A: Matrix[dtype],
+    row_start: Int,
+    column_start: Int,
+) raises -> None:
+    alias simd_width = simdwidthof[dtype]()
+    var aRows = A.shape[0]
+    var aCols = A.shape[1]
 
+    @parameter
+    fn compute_qr_vec[simd_width: Int](j: Int):
+        var dot: SIMD[dtype, simd_width] = 0.0
+        @parameter
+        fn compute_dot_vec[simd_width: Int](i: Int):
+            dot += H._load[simd_width](i, work_index) * A._load[simd_width](i, j)
 
+        vectorize[compute_dot_vec, simd_width](aRows - row_start)
+
+        @parameter
+        fn update_A_vec[simd_width: Int](i: Int):
+            var val = A._load[simd_width](i, j) - H._load[simd_width](i, work_index) * dot
+            A._store[simd_width](i, j, val)
+
+        vectorize[update_A_vec, simd_width](aRows - row_start)
+
+    vectorize[compute_qr_vec, simd_width](aCols - column_start)
+"""
 fn lu_decomposition[
     dtype: DType
 ](A: NDArray[dtype]) raises -> Tuple[NDArray[dtype], NDArray[dtype]]:
