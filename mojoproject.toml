@@ -49,8 +49,16 @@ doc_pages = "mojo doc numojo/ -o docs.json"
 # run everything and generate docs before release
 release = "clear && magic run final && magic run doc_pages"
 
-[dependencies]
-max = "=25.1.1"
-python = ">=3.11"
-numpy = ">=1.19"
-scipy = ">=1.14"
+[feature.build]
+dependencies = {max = "=25.1.1"}
+
+[feature.test]
+dependencies = {python = ">=3.11", numpy = ">=1.19", scipy = ">=1.14"}
+
+[feature.development]
+dependencies = {ipykernel = ">=6.29.5,<7"}
+
+[environments]
+default = ["build","test","development"]
+test = ["build","test"]
+build = ["build"]
