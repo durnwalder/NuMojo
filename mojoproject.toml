@@ -24,7 +24,7 @@ p = "clear && magic run package"
 format = "magic run mojo format ./"
 
 # test whether tests pass on the built package
-test = "magic run package && magic run mojo test tests -I tests/ && rm tests/numojo.mojopkg"
+test = "magic run package && magic run mojo test tests -I ./tests/"
 t = "clear && magic run test"
 
 # run individual tests to avoid overheat
