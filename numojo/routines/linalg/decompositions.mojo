@@ -34,7 +34,7 @@ fn compute_householder[
 
     @parameter
     fn calculate_norm[width: Int](n: Int):
-        norm += (H._load[width=width](n, column)**2).reduce_add()
+        norm += (H._load[width=width](n, column) ** 2).reduce_add()
 
     vectorize[calculate_norm, simd_width](rRows)
 
@@ -66,6 +66,8 @@ fn compute_householder[
         H._store[simd_width](i, column, H._load[simd_width](i, column) * s)
 
     vectorize[scale_increment_vec, simd_width](rRows - row)
+
+
 fn compute_qr[
     dtype: DType
 ](
@@ -85,6 +87,8 @@ fn compute_qr[
         for i in range(row_start, aRows):
             val = A._load(i, j) - H._load(i, work_index) * dot
             A._store(i, j, val)
+
+
 """
 fn compute_qr[
     dtype: DType
@@ -117,6 +121,8 @@ fn compute_qr[
 
     vectorize[compute_qr_vec, simd_width](aCols - column_start)
 """
+
+
 fn lu_decomposition[
     dtype: DType
 ](A: NDArray[dtype]) raises -> Tuple[NDArray[dtype], NDArray[dtype]]:
