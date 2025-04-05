@@ -26,7 +26,9 @@ fn compute_householder[
         H._store[simd_width](i, column, val)
         R._store[simd_width](i, column, 0.0)
 
-    vectorize[load_store_vec, simd_width](rRows - row)
+    @parameter
+    fn offset_load_store[simd_width: Int](i: Int):
+        load_store_vec[simd_width](row + i)
 
     var norm = Scalar[dtype](0)
 
