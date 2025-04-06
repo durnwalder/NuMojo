@@ -1,9 +1,9 @@
 # ===----------------------------------------------------------------------=== #
 # Decompositions
 # ===----------------------------------------------------------------------=== #
-
 from sys import simdwidthof
 from algorithm import parallelize, vectorize
+
 import math as builtin_math
 
 from numojo.core.ndarray import NDArray
@@ -26,10 +26,7 @@ fn compute_householder[
         H._store[simd_width](i, column, val)
         R._store[simd_width](i, column, 0.0)
 
-    @parameter
-    fn offset_load_store[simd_width: Int](i: Int):
-        load_store_vec[simd_width](row + i)
-
+    vectorize[load_store_vec, simd_width](rRows - row)
     var norm = Scalar[dtype](0)
 
     @parameter
@@ -37,6 +34,8 @@ fn compute_householder[
         norm += (H._load[width=width](n, column) ** 2).reduce_add()
 
     vectorize[calculate_norm, simd_width](rRows)
+
+    norm = builtin_math.sqrt(norm)
 
     if row == rRows - 1 or norm == 0:
         var first_element = H._load(row, column)
@@ -87,40 +86,6 @@ fn compute_qr[
         for i in range(row_start, aRows):
             val = A._load(i, j) - H._load(i, work_index) * dot
             A._store(i, j, val)
-
-
-"""
-fn compute_qr[
-    dtype: DType
-](
-    mut H: Matrix[dtype],
-    work_index: Int,
-    mut A: Matrix[dtype],
-    row_start: Int,
-    column_start: Int,
-) raises -> None:
-    alias simd_width = simdwidthof[dtype]()
-    var aRows = A.shape[0]
-    var aCols = A.shape[1]
-
-    @parameter
-    fn compute_qr_vec[simd_width: Int](j: Int):
-        var dot: SIMD[dtype, simd_width] = 0.0
-        @parameter
-        fn compute_dot_vec[simd_width: Int](i: Int):
-            dot += H._load[simd_width](i, work_index) * A._load[simd_width](i, j)
-
-        vectorize[compute_dot_vec, simd_width](aRows - row_start)
-
-        @parameter
-        fn update_A_vec[simd_width: Int](i: Int):
-            var val = A._load[simd_width](i, j) - H._load[simd_width](i, work_index) * dot
-            A._store[simd_width](i, j, val)
-
-        vectorize[update_A_vec, simd_width](aRows - row_start)
-
-    vectorize[compute_qr_vec, simd_width](aCols - column_start)
-"""
 
 
 fn lu_decomposition[
