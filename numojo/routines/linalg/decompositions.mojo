@@ -312,7 +312,7 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](owned A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
+](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
     """
     Compute the QR decomposition of a matrix.
 
@@ -326,22 +326,27 @@ fn qr[
         A tuple containing the orthonormal matrix `Q` and
         the upper-triangular matrix `R`.
     """
-    var m = A.shape[0]
-    var n = A.shape[1]
+    var R: Matrix[dtype]
 
-    var Q = Matrix.full[dtype](shape=(m, m))
-    for i in range(m):
-        Q._store(i, i, 1.0)
+    if A.flags.C_CONTIGUOUS:
+        R = A.swizzle()
+    else:
+        R = A
+
+    var m = R.shape[0]
+    var n = R.shape[1]
+
+    var Q = Matrix.identity[dtype](m, c_contigous=False)
 
     var min_n = min(m, n)
 
-    var H = Matrix.full[dtype](shape=(m, min_n))
+    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=False)
 
     for i in range(min_n):
-        compute_householder(H, A, i, i)
-        compute_qr(H, i, A, i, i + 1)
+        compute_householder(H, R, i, i)
+        compute_qr(H, i, R, i, i + 1)
 
     for i in range(min_n - 1, -1, -1):
-        compute_qr(H, i, Q, i, i)
+        compute_qr(H, i, R, i, i)
 
-    return Q, A
+    return Q, R
