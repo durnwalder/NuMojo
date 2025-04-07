@@ -347,6 +347,6 @@ fn qr[
         compute_qr(H, i, R, i, i + 1)
 
     for i in range(min_n - 1, -1, -1):
-        compute_qr(H, i, R, i, i)
+        compute_qr(H, i, Q, i, i)
 
     return Q, R
