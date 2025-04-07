@@ -11,7 +11,7 @@ from numojo.core.matrix import Matrix
 from numojo.routines.creation import zeros, eye, full
 
 
-fn compute_householder[
+fn _compute_householder[
     dtype: DType
 ](
     mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
@@ -69,7 +69,7 @@ fn compute_householder[
     vectorize[scale_increment_vec, simd_width](rRows)
 
 
-fn compute_qr[
+fn _apply_householder[
     dtype: DType
 ](
     mut H: Matrix[dtype],
@@ -335,21 +335,18 @@ fn qr[
     else:
         R = A
 
-    c_contigous = False
     var m = R.shape[0]
     var n = R.shape[1]
 
-    var Q = Matrix.identity[dtype](m, c_contigous=c_contigous)
-
     var min_n = min(m, n)
-
-    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=c_contigous)
+    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=False)
 
     for i in range(min_n):
-        compute_householder(H, R, i, i)
-        compute_qr(H, i, R, i, i + 1)
+        _compute_householder(H, R, i, i)
+        _apply_householder(H, i, R, i, i + 1)
 
+    var Q = Matrix.identity[dtype](m, c_contigous=False)
     for i in range(min_n - 1, -1, -1):
-        compute_qr(H, i, Q, i, i)
+        _apply_householder(H, i, Q, i, i)
 
     return Q, R
