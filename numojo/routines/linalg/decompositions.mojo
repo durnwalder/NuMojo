@@ -313,6 +313,7 @@ fn partial_pivoting[
 
     return Tuple(A^, P^, s)
 
+
 fn qr[
     dtype: DType
 ](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
