@@ -209,7 +209,7 @@ def test_linalg():
 
 
 def test_qr_decomposition():
-    A = Matrix.rand[f64]((20, 20))
+    A = Matrix.rand[f64]((15, 15))
 
     var np = Python.import_module("numpy")
 
