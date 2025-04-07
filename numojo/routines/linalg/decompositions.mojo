@@ -45,30 +45,32 @@ fn _compute_householder[
         H._store(row, column, sqrt2)
         return
 
-    var scale = 1.0 / norm
+    var scaling_factor = 1.0 / norm
     if H._load(row, column) < 0:
-        scale = -scale
+        scaling_factor = -scaling_factor
 
-    R._store(row, column, -1 / scale)
-
-    @parameter
-    fn scale_vec[simd_width: Int](i: Int):
-        H._store[simd_width](i, column, H._load[simd_width](i, column) * scale)
-
-    vectorize[scale_vec, simd_width](rRows)
-
-    var increment = H._load(row, column) + 1.0
-    H._store(row, column, increment)
-
-    var scaling_factor = builtin_math.sqrt(1.0 / increment)
+    R._store(row, column, -1 / scaling_factor)
 
     @parameter
-    fn scale_increment_vec[simd_width: Int](i: Int):
+    fn scaling_factor_vec[simd_width: Int](i: Int):
         H._store[simd_width](
             i, column, H._load[simd_width](i, column) * scaling_factor
         )
 
-    vectorize[scale_increment_vec, simd_width](rRows)
+    vectorize[scaling_factor_vec, simd_width](rRows)
+
+    var increment = H._load(row, column) + 1.0
+    H._store(row, column, increment)
+
+    scaling_factor = builtin_math.sqrt(1.0 / increment)
+
+    @parameter
+    fn scaling_factor_increment_vec[simd_width: Int](i: Int):
+        H._store[simd_width](
+            i, column, H._load[simd_width](i, column) * scaling_factor
+        )
+
+    vectorize[scaling_factor_increment_vec, simd_width](rRows)
 
 
 fn _apply_householder[
