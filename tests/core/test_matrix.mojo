@@ -208,7 +208,26 @@ def test_linalg():
         )
 
 
-def test_qr_decomposition():
+def test_qr_decomposition_non_quadratic():
+    A = Matrix.rand[f64]((4, 13))
+
+    var np = Python.import_module("numpy")
+
+    Q, R = nm.linalg.qr(A)
+
+    # Check if Q^T Q is close to the identity matrix, i.e Q is orthonormal
+    var id = Q.transpose() @ Q
+    assert_true(np.allclose(id.to_numpy(), np.eye(Q.shape[0]), atol=1e-14))
+
+    # Check if R is upper triangular
+    assert_true(np.allclose(R.to_numpy(), np.triu(R.to_numpy()), atol=1e-14))
+
+    # Check if A = QR
+    var A_test = Q @ R
+    assert_true(np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14))
+
+
+def test_qr_decomposition_quadratic():
     A = Matrix.rand[f64]((15, 15))
 
     var np = Python.import_module("numpy")
