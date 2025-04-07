@@ -17,16 +17,18 @@ fn compute_householder[
     mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
 ) raises -> None:
     alias simd_width = simdwidthof[dtype]()
-    var sqrt2: SIMD[dtype, simd_width] = 1.4142135623730951
+    var sqrt2: Scalar[dtype] = 1.4142135623730951
     var rRows = R.shape[0]
 
     @parameter
-    fn load_store_vec[simd_width: Int](i: Int):
-        var val = R._load[simd_width](i, column)
-        H._store[simd_width](i, column, val)
-        R._store[simd_width](i, column, 0.0)
+    fn load_store_vec[n_elements: Int](i: Int):
+        H._store[n_elements](
+            i + row, column, R._load[n_elements](i + row, column)
+        )
+        R._store[n_elements](i + row, column, SIMD[dtype, n_elements](0.0))
 
     vectorize[load_store_vec, simd_width](rRows - row)
+
     var norm = Scalar[dtype](0)
 
     @parameter
@@ -38,7 +40,7 @@ fn compute_householder[
     norm = builtin_math.sqrt(norm)
 
     if row == rRows - 1 or norm == 0:
-        var first_element = H._load(row, column)
+        first_element = H._load(row, column)
         R._store(row, column, -first_element)
         H._store(row, column, sqrt2)
         return
@@ -53,7 +55,7 @@ fn compute_householder[
     fn scale_vec[simd_width: Int](i: Int):
         H._store[simd_width](i, column, H._load[simd_width](i, column) * scale)
 
-    vectorize[scale_vec, simd_width](rRows - row)
+    vectorize[scale_vec, simd_width](rRows)
 
     var increment = H._load(row, column) + 1.0
     H._store(row, column, increment)
@@ -64,7 +66,7 @@ fn compute_householder[
     fn scale_increment_vec[simd_width: Int](i: Int):
         H._store[simd_width](i, column, H._load[simd_width](i, column) * s)
 
-    vectorize[scale_increment_vec, simd_width](rRows - row)
+    vectorize[scale_increment_vec, simd_width](rRows)
 
 
 fn compute_qr[
@@ -333,14 +335,15 @@ fn qr[
     else:
         R = A
 
+    c_contigous = False
     var m = R.shape[0]
     var n = R.shape[1]
 
-    var Q = Matrix.identity[dtype](m, c_contigous=False)
+    var Q = Matrix.identity[dtype](m, c_contigous=c_contigous)
 
     var min_n = min(m, n)
 
-    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=False)
+    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=c_contigous)
 
     for i in range(min_n):
         compute_householder(H, R, i, i)
