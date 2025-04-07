@@ -295,7 +295,7 @@ fn transpose[dtype: DType](A: Matrix[dtype]) -> Matrix[dtype]:
     return B^
 
 
-fn swizzle[dtype: DType](A: Matrix[dtype]) -> Matrix[dtype]:
+fn reorder_layout[dtype: DType](A: Matrix[dtype]) -> Matrix[dtype]:
     """
     Create a new Matrix with the opposite layout from A:
     if A is C-contiguous, then create a new F-contiguous matrix of the same shape.

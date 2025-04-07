@@ -323,7 +323,7 @@ fn qr[
     `R` is upper-triangular. If `A` is stored in row-major form (C-contiguous), it is
     internally converted to column-major form (F-contiguous) prior to the decomposition.
     Consequently, the resulting `Q` and `R` are also in F-contiguous format. If a
-    row-major representation of the output is needed, call `.swizzle()` on the returned
+    row-major representation of the output is needed, call `.reorder_layout()` on the returned
     matrices.
 
     Args:
@@ -335,7 +335,7 @@ fn qr[
     var R: Matrix[dtype]
 
     if A.flags.C_CONTIGUOUS:
-        R = A.swizzle()
+        R = A.reorder_layout()
     else:
         R = A
 

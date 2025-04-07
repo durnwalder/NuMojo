@@ -17,7 +17,7 @@ from numojo.core.flags import Flags
 from numojo.core.ndarray import NDArray
 from numojo.core.own_data import OwnData
 from numojo.core.utility import _get_offset
-from numojo.routines.manipulation import broadcast_to, swizzle
+from numojo.routines.manipulation import broadcast_to, reorder_layout
 
 # ===----------------------------------------------------------------------===#
 # Matrix struct
@@ -1176,11 +1176,11 @@ struct Matrix[dtype: DType = DType.float64](
         """
         return transpose(self)
 
-    fn swizzle(self) -> Self:
+    fn reorder_layout(self) -> Self:
         """
-        Swizzle matrix.
+        reorder_layout matrix.
         """
-        return swizzle(self)
+        return reorder_layout(self)
 
     fn T(self) -> Self:
         return transpose(self)
