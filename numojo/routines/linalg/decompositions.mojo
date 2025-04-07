@@ -17,7 +17,7 @@ fn _compute_householder[
     mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
 ) raises -> None:
     alias simd_width = simdwidthof[dtype]()
-    var sqrt2: Scalar[dtype] = 1.4142135623730951
+    alias sqrt2: Scalar[dtype] = 1.4142135623730951
     var rRows = R.shape[0]
 
     @parameter
@@ -60,11 +60,13 @@ fn _compute_householder[
     var increment = H._load(row, column) + 1.0
     H._store(row, column, increment)
 
-    var s = builtin_math.sqrt(1.0 / increment)
+    var scaling_factor = builtin_math.sqrt(1.0 / increment)
 
     @parameter
     fn scale_increment_vec[simd_width: Int](i: Int):
-        H._store[simd_width](i, column, H._load[simd_width](i, column) * s)
+        H._store[simd_width](
+            i, column, H._load[simd_width](i, column) * scaling_factor
+        )
 
     vectorize[scale_increment_vec, simd_width](rRows)
 
