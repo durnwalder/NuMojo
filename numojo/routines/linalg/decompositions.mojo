@@ -13,65 +13,61 @@ from numojo.routines.creation import zeros, eye, full
 
 fn _compute_householder[
     dtype: DType
-](
-    mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
-) raises -> None:
+](mut H: Matrix[dtype], mut R: Matrix[dtype], work_index: Int) raises -> None:
     alias simd_width = simdwidthof[dtype]()
     alias sqrt2: Scalar[dtype] = 1.4142135623730951
     var rRows = R.shape[0]
 
     @parameter
     fn load_store_vec[n_elements: Int](i: Int):
-        H._store[n_elements](
-            i + row, column, R._load[n_elements](i + row, column)
-        )
-        R._store[n_elements](i + row, column, SIMD[dtype, n_elements](0.0))
+        var r_value = R._load[n_elements](i + work_index, work_index)
+        H._store[n_elements](i + work_index, work_index, r_value)
+        R._store[n_elements](i + work_index, work_index, 0.0)
 
-    vectorize[load_store_vec, simd_width](rRows - row)
+    vectorize[load_store_vec, simd_width](rRows - work_index)
 
     var norm = Scalar[dtype](0)
 
     @parameter
-    fn calculate_norm[width: Int](n: Int):
-        norm += (H._load[width=width](n, column) ** 2).reduce_add()
+    fn calculate_norm[width: Int](i: Int):
+        norm += (H._load[width=width](i, work_index) ** 2).reduce_add()
 
     vectorize[calculate_norm, simd_width](rRows)
 
     norm = builtin_math.sqrt(norm)
 
-    if row == rRows - 1 or norm == 0:
-        first_element = H._load(row, column)
-        R._store(row, column, -first_element)
-        H._store(row, column, sqrt2)
+    if work_index == rRows - 1 or norm == 0:
+        first_element = H._load(work_index, work_index)
+        R._store(work_index, work_index, -first_element)
+        H._store(work_index, work_index, sqrt2)
         return
 
     var scaling_factor = 1.0 / norm
-    if H._load(row, column) < 0:
+    if H._load(work_index, work_index) < 0:
         scaling_factor = -scaling_factor
 
-    R._store(row, column, -1 / scaling_factor)
+    R._store(work_index, work_index, -1 / scaling_factor)
 
     @parameter
     fn scaling_factor_vec[simd_width: Int](i: Int):
         H._store[simd_width](
-            i, column, H._load[simd_width](i, column) * scaling_factor
+            i, work_index, H._load[simd_width](i, work_index) * scaling_factor
         )
 
     vectorize[scaling_factor_vec, simd_width](rRows)
 
-    var increment = H._load(row, column) + 1.0
-    H._store(row, column, increment)
+    var increment = H._load(work_index, work_index) + 1.0
+    H._store(work_index, work_index, increment)
 
     scaling_factor = builtin_math.sqrt(1.0 / increment)
 
     @parameter
     fn scaling_factor_increment_vec[simd_width: Int](i: Int):
         H._store[simd_width](
-            i, column, H._load[simd_width](i, column) * scaling_factor
+            i, work_index, H._load[simd_width](i, work_index) * scaling_factor
         )
 
     vectorize[scaling_factor_increment_vec, simd_width](rRows)
-
 
 fn _apply_householder[
     dtype: DType
@@ -92,6 +88,48 @@ fn _apply_householder[
         for i in range(row_start, aRows):
             val = A._load(i, j) - H._load(i, work_index) * dot
             A._store(i, j, val)
+fn qr[
+    dtype: DType
+](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
+    """
+    Compute the QR decomposition of a matrix, ensuring column-major (F-contiguous) layout.
+
+    The decomposition factors the matrix `A` into `Q * R`, where `Q` is orthonormal and
+    `R` is upper-triangular. If `A` is stored in row-major form (C-contiguous), it is
+    internally converted to column-major form (F-contiguous) prior to the decomposition.
+    Consequently, the resulting `Q` and `R` are also in F-contiguous format. If a
+    row-major representation of the output is needed, call `.reorder_layout()` on the returned
+    matrices.
+
+    Args:
+        A: The input matrix to be factorized.
+
+    Returns:
+        A tuple of `Q` and `R`. Both matrices are stored in F-contiguous layout.
+    """
+    var R: Matrix[dtype]
+
+    if A.flags.C_CONTIGUOUS:
+        R = A.reorder_layout()
+    else:
+        R = A
+
+    var m = R.shape[0]
+    var n = R.shape[1]
+
+    var min_n = min(m, n)
+    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=False)
+
+    for i in range(min_n):
+        _compute_householder(H, R, i)
+        _apply_householder(H, i, R, i, i + 1)
+
+    var Q = Matrix.identity[dtype](m, c_contigous=False)
+    for i in range(min_n - 1, -1, -1):
+        _apply_householder(H, i, Q, i, i)
+
+    return Q, R
+
 
 
 fn lu_decomposition[
@@ -314,46 +352,3 @@ fn partial_pivoting[
             s = s + 1
 
     return Tuple(A^, P^, s)
-
-
-fn qr[
-    dtype: DType
-](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
-    """
-    Compute the QR decomposition of a matrix, ensuring column-major (F-contiguous) layout.
-
-    The decomposition factors the matrix `A` into `Q * R`, where `Q` is orthonormal and
-    `R` is upper-triangular. If `A` is stored in row-major form (C-contiguous), it is
-    internally converted to column-major form (F-contiguous) prior to the decomposition.
-    Consequently, the resulting `Q` and `R` are also in F-contiguous format. If a
-    row-major representation of the output is needed, call `.reorder_layout()` on the returned
-    matrices.
-
-    Args:
-        A: The input matrix to be factorized.
-
-    Returns:
-        A tuple of `Q` and `R`. Both matrices are stored in F-contiguous layout.
-    """
-    var R: Matrix[dtype]
-
-    if A.flags.C_CONTIGUOUS:
-        R = A.reorder_layout()
-    else:
-        R = A
-
-    var m = R.shape[0]
-    var n = R.shape[1]
-
-    var min_n = min(m, n)
-    var H = Matrix.full[dtype](shape=(m, min_n), c_contigous=False)
-
-    for i in range(min_n):
-        _compute_householder(H, R, i, i)
-        _apply_householder(H, i, R, i, i + 1)
-
-    var Q = Matrix.identity[dtype](m, c_contigous=False)
-    for i in range(min_n - 1, -1, -1):
-        _apply_householder(H, i, Q, i, i)
-
-    return Q, R
