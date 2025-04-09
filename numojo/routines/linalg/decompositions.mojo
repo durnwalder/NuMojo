@@ -69,6 +69,7 @@ fn _compute_householder[
 
     vectorize[scaling_factor_increment_vec, simd_width](rRows)
 
+
 fn _apply_householder[
     dtype: DType
 ](
@@ -88,6 +89,8 @@ fn _apply_householder[
         for i in range(row_start, aRows):
             val = A._load(i, j) - H._load(i, work_index) * dot
             A._store(i, j, val)
+
+
 fn qr[
     dtype: DType
 ](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
@@ -129,7 +132,6 @@ fn qr[
         _apply_householder(H, i, Q, i, i)
 
     return Q, R
-
 
 
 fn lu_decomposition[
