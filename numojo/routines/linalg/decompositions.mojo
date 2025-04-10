@@ -95,7 +95,7 @@ fn _apply_householder[
 
         @parameter
         fn closure[width: Int](i: Int):
-            val = A._load(i, j) - H._load(i, work_index) * dot
+            val = A._load[width](i, j) - H._load[width](i, work_index) * dot
             A._store(i, j, val)
 
         vectorize[closure, simdwidth](aRows)
