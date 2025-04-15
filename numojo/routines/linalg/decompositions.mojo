@@ -14,13 +14,17 @@ from numojo.routines.creation import zeros, eye, full
 fn _compute_householder[
     dtype: DType
 ](mut H: Matrix[dtype], mut R: Matrix[dtype], work_index: Int) raises -> None:
-    var sqrt2: SIMD[dtype, 1] = 1.4142135623730951
+    alias simd_width = simdwidthof[dtype]()
+    alias sqrt2: Scalar[dtype] = 1.4142135623730951
     var rRows = R.shape[0]
 
-    for i in range(work_index, rRows):
-        var val = R._load(i, work_index)
-        H._store(i, work_index, val)
-        R._store(i, work_index, 0.0)
+    @parameter
+    fn load_store_vec[n_elements: Int](i: Int):
+        var r_value = R._load[n_elements](i + work_index, work_index)
+        H._store[n_elements](i + work_index, work_index, r_value)
+        R._store[n_elements](i + work_index, work_index, 0.0)
+
+    vectorize[load_store_vec, simd_width](rRows - work_index)
 
     var norm: Scalar[dtype] = 0.0
     for i in range(rRows):
