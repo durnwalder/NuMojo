@@ -348,6 +348,8 @@ fn qr[
         R = R.reorder_layout()
         H = H.reorder_layout()
 
+    R = R.reorder_layout()
+    H = H.reorder_layout()
     var Q = Matrix.identity[dtype](m, c_contigous=True)
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
