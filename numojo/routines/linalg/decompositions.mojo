@@ -324,30 +324,19 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](A: Matrix[dtype]) raises -> Tuple[
-    Matrix[dtype], Matrix[dtype]
-]:
+](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
     """
-    Compute the QR decomposition of a matrix, optionally enforcing column-major (F-contiguous) layout.
+    Computes the QR decomposition using Householder transformations.
 
-    **Scenarios**:
-    1) If `A` is C-contiguous and `enforce_optimized_layout == True`,
-       the data is reordered to F-contiguous to optimize column-based operations.
-    2) If `A` is C-contiguous and `enforce_optimized_layout == False`,
-       no reordering happens; all outputs remain C-contiguous.
-    3) If `A` is already F-contiguous, no reordering is performed.
-
-    The decomposition factors the matrix `A` into `Q * R`, where `Q` is orthonormal
-    and `R` is upper-triangular. Matrices Q and R are returned in the same
-    layout as the input matrix `A`.
+    For best performance, pass `A` in F-contiguous (column-major) layout. If `A` is
+    C-contiguous, this function automatically reorders `A` to F-contiguous, then
+    reverts the resulting Q and R to the original layout before returning.
 
     Args:
-        A: The input matrix to factorize.
-        enforce_optimized_layout: If `True`, reorder from C to F layout for better
-                                  performance in column-based operations.
+        A: The input matrix.
 
     Returns:
-        A tuple `(Q, R)` after decomposition.
+        A tuple `(Q, R)` where `Q` is orthonormal and `R` is upper-triangular.
     """
     var R: Matrix[dtype] = A
     var c_contigous: Bool = False
