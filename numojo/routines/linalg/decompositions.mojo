@@ -80,13 +80,24 @@ fn _apply_householder[
 ) raises -> None:
     var aRows = A.shape[0]
     var aCols = A.shape[1]
+    alias simdwidth = simdwidthof[dtype]()
     for j in range(column_start, aCols):
         var dot: SIMD[dtype, 1] = 0.0
-        for i in range(row_start, aRows):
-            dot += H._load(i, work_index) * A._load(i, j)
-        for i in range(row_start, aRows):
-            val = A._load(i, j) - H._load(i, work_index) * dot
+
+        @parameter
+        fn calculate_norm[width: Int](i: Int):
+            dot += (
+                H._load[width=width](i, work_index) * A._load[width=width](i, j)
+            ).reduce_add()
+
+        vectorize[calculate_norm, simdwidth](aRows)
+
+        @parameter
+        fn closure[width: Int](i: Int):
+            val = A._load[width](i, j) - H._load[width](i, work_index) * dot
             A._store(i, j, val)
+
+        vectorize[closure, simdwidth](aRows)
 
 
 fn lu_decomposition[
