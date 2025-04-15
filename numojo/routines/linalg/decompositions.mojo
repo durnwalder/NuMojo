@@ -361,11 +361,7 @@ fn qr[
 
     for i in range(min_n):
         _compute_householder(H, R, i)
-        R = R.reorder_layout()
-        H = H.reorder_layout()
         _apply_householder(H, i, R, i, i + 1)
-        R = R.reorder_layout()
-        H = H.reorder_layout()
 
     R = R.reorder_layout()
     H = H.reorder_layout()
