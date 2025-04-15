@@ -321,15 +321,14 @@ fn qr[
 
     **Scenarios**:
     1) If `A` is C-contiguous and `enforce_optimized_layout == True`,
-       the data is reordered to F-contiguous to potentially optimize column-based operations.
+       the data is reordered to F-contiguous to optimize column-based operations.
     2) If `A` is C-contiguous and `enforce_optimized_layout == False`,
        no reordering happens; all outputs remain C-contiguous.
     3) If `A` is already F-contiguous, no reordering is performed.
 
     The decomposition factors the matrix `A` into `Q * R`, where `Q` is orthonormal
-    and `R` is upper-triangular. Buffer allocation for intermediate matrices (`H`, `Q`)
-    depends on the final layout after any reordering. If you need a different layout
-    of the output, call `.reorder_layout()` on `Q` or `R`.
+    and `R` is upper-triangular. Matrices Q and R are returned in the same
+    layout as the input matrix `A`.
 
     Args:
         A: The input matrix to factorize.
@@ -339,19 +338,14 @@ fn qr[
     Returns:
         A tuple `(Q, R)` after decomposition.
     """
-    var R: Matrix[dtype]
-    var c_contigous: Bool
+    var R: Matrix[dtype] = A
+    var c_contigous: Bool = False
 
     if A.flags.C_CONTIGUOUS:
         if enforce_optimized_layout:
             R = A.reorder_layout()
-            c_contigous = False
         else:
-            R = A
             c_contigous = True
-    else:
-        R = A
-        c_contigous = True
 
     var m = R.shape[0]
     var n = R.shape[1]
@@ -367,7 +361,9 @@ fn qr[
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
 
-    Q = Q.reorder_layout()
-    R = R.reorder_layout()
+    if A.flags.C_CONTIGUOUS:
+        if enforce_optimized_layout:
+            Q = Q.reorder_layout()
+            R = R.reorder_layout()
 
     return Q, R
