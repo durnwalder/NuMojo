@@ -26,9 +26,14 @@ fn _compute_householder[
 
     vectorize[load_store_vec, simd_width](rRows - work_index)
 
-    var norm: Scalar[dtype] = 0.0
-    for i in range(rRows):
-        norm += H._load(i, work_index) ** 2
+    var norm = Scalar[dtype](0)
+
+    @parameter
+    fn calculate_norm[width: Int](i: Int):
+        norm += (H._load[width=width](i, work_index) ** 2).reduce_add()
+
+    vectorize[calculate_norm, simd_width](rRows)
+
     norm = builtin_math.sqrt(norm)
     if work_index == rRows - 1 or norm == 0:
         first_element = H._load(work_index, work_index)
