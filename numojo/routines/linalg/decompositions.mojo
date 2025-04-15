@@ -1,8 +1,9 @@
 # ===----------------------------------------------------------------------=== #
 # Decompositions
 # ===----------------------------------------------------------------------=== #
+from sys import simdwidthof
+from algorithm import parallelize, vectorize
 
-from algorithm import parallelize
 import math as builtin_math
 
 from numojo.core.ndarray import NDArray
@@ -10,48 +11,46 @@ from numojo.core.matrix import Matrix
 from numojo.routines.creation import zeros, eye, full
 
 
-fn compute_householder[
+fn _compute_householder[
     dtype: DType
-](
-    mut H: Matrix[dtype], mut R: Matrix[dtype], row: Int, column: Int
-) raises -> None:
+](mut H: Matrix[dtype], mut R: Matrix[dtype], work_index: Int) raises -> None:
     var sqrt2: SIMD[dtype, 1] = 1.4142135623730951
     var rRows = R.shape[0]
 
-    for i in range(row, rRows):
-        var val = R._load(i, column)
-        H._store(i, column, val)
-        R._store(i, column, 0.0)
+    for i in range(work_index, rRows):
+        var val = R._load(i, work_index)
+        H._store(i, work_index, val)
+        R._store(i, work_index, 0.0)
 
     var norm: Scalar[dtype] = 0.0
     for i in range(rRows):
-        norm += H._load(i, column) ** 2
+        norm += H._load(i, work_index) ** 2
     norm = builtin_math.sqrt(norm)
-    if row == rRows - 1 or norm == 0:
-        first_element = H._load(row, column)
-        R._store(row, column, -first_element)
-        H._store(row, column, sqrt2)
+    if work_index == rRows - 1 or norm == 0:
+        first_element = H._load(work_index, work_index)
+        R._store(work_index, work_index, -first_element)
+        H._store(work_index, work_index, sqrt2)
         return
 
     scale = 1.0 / norm
-    if H._load(row, column) < 0:
+    if H._load(work_index, work_index) < 0:
         scale = -scale
 
-    R._store(row, column, -1 / scale)
+    R._store(work_index, work_index, -1 / scale)
 
-    for i in range(row, rRows):
-        H._store(i, column, H._load(i, column) * scale)
+    for i in range(work_index, rRows):
+        H._store(i, work_index, H._load(i, work_index) * scale)
 
-    increment = H._load(row, column) + 1.0
-    H._store(row, column, increment)
+    increment = H._load(work_index, work_index) + 1.0
+    H._store(work_index, work_index, increment)
 
     s = builtin_math.sqrt(1.0 / increment)
 
-    for i in range(row, rRows):
-        H._store(i, column, H._load(i, column) * s)
+    for i in range(work_index, rRows):
+        H._store(i, work_index, H._load(i, work_index) * s)
 
 
-fn compute_qr[
+fn _apply_householder[
     dtype: DType
 ](
     mut H: Matrix[dtype],
@@ -62,7 +61,6 @@ fn compute_qr[
 ) raises -> None:
     var aRows = A.shape[0]
     var aCols = A.shape[1]
-
     for j in range(column_start, aCols):
         var dot: SIMD[dtype, 1] = 0.0
         for i in range(row_start, aRows):
@@ -296,36 +294,58 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](owned A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
+](A: Matrix[dtype], enforce_optimized_layout: Bool = False) raises -> Tuple[
+    Matrix[dtype], Matrix[dtype]
+]:
     """
-    Compute the QR decomposition of a matrix.
+    Compute the QR decomposition of a matrix, optionally enforcing column-major (F-contiguous) layout.
 
-    Decompose the matrix `A` as `QR`, where `Q` is orthonormal and `R` is upper-triangular.
-    This function is similar to `numpy.linalg.qr`.
+    **Scenarios**:
+    1) If `A` is C-contiguous and `enforce_optimized_layout == True`,
+       the data is reordered to F-contiguous to potentially optimize column-based operations.
+    2) If `A` is C-contiguous and `enforce_optimized_layout == False`,
+       no reordering happens; all outputs remain C-contiguous.
+    3) If `A` is already F-contiguous, no reordering is performed.
+
+    The decomposition factors the matrix `A` into `Q * R`, where `Q` is orthonormal
+    and `R` is upper-triangular. Buffer allocation for intermediate matrices (`H`, `Q`)
+    depends on the final layout after any reordering. If you need a different layout
+    of the output, call `.reorder_layout()` on `Q` or `R`.
 
     Args:
-        A: The input matrix to be factorized.
+        A: The input matrix to factorize.
+        enforce_optimized_layout: If `True`, reorder from C to F layout for better
+                                  performance in column-based operations.
 
     Returns:
-        A tuple containing the orthonormal matrix `Q` and
-        the upper-triangular matrix `R`.
+        A tuple `(Q, R)` after decomposition.
     """
-    var m = A.shape[0]
-    var n = A.shape[1]
+    var R: Matrix[dtype]
+    var c_contigous: Bool
 
-    var Q = Matrix.full[dtype](shape=(m, m))
-    for i in range(m):
-        Q._store(i, i, 1.0)
+    if A.flags.C_CONTIGUOUS:
+        if enforce_optimized_layout:
+            R = A.reorder_layout()
+            c_contigous = False
+        else:
+            R = A
+            c_contigous = True
+    else:
+        R = A
+        c_contigous = True
+
+    var m = R.shape[0]
+    var n = R.shape[1]
 
     var min_n = min(m, n)
-
-    var H = Matrix.full[dtype](shape=(m, min_n))
+    var H = Matrix.zeros[dtype](shape=(m, min_n), c_contigous=c_contigous)
 
     for i in range(min_n):
-        compute_householder(H, A, i, i)
-        compute_qr(H, i, A, i, i + 1)
+        _compute_householder(H, R, i)
+        _apply_householder(H, i, R, i, i + 1)
 
+    var Q = Matrix.identity[dtype](m, c_contigous=c_contigous)
     for i in range(min_n - 1, -1, -1):
-        compute_qr(H, i, Q, i, i)
+        _apply_householder(H, i, Q, i, i)
 
-    return Q, A
+    return Q, R
