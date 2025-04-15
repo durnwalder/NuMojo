@@ -357,13 +357,13 @@ fn qr[
     var n = R.shape[1]
 
     var min_n = min(m, n)
-    var H = Matrix.zeros[dtype](shape=(m, min_n), c_contigous=False)
+    var H = Matrix.zeros[dtype](shape=(m, min_n), c_contigous=c_contigous)
 
     for i in range(min_n):
         _compute_householder(H, R, i)
         _apply_householder(H, i, R, i, i + 1)
 
-    var Q = Matrix.identity[dtype](m, c_contigous=False)
+    var Q = Matrix.identity[dtype](m, c_contigous=c_contigous)
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
 
