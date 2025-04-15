@@ -324,7 +324,7 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](A: Matrix[dtype], enforce_optimized_layout: Bool = True) raises -> Tuple[
+](A: Matrix[dtype]) raises -> Tuple[
     Matrix[dtype], Matrix[dtype]
 ]:
     """
@@ -353,10 +353,7 @@ fn qr[
     var c_contigous: Bool = False
 
     if A.flags.C_CONTIGUOUS:
-        if enforce_optimized_layout:
-            R = A.reorder_layout()
-        else:
-            c_contigous = True
+        R = A.reorder_layout()
 
     var m = R.shape[0]
     var n = R.shape[1]
@@ -373,8 +370,7 @@ fn qr[
         _apply_householder(H, i, Q, i, i)
 
     if A.flags.C_CONTIGUOUS:
-        if enforce_optimized_layout:
-            Q = Q.reorder_layout()
-            R = R.reorder_layout()
+        Q = Q.reorder_layout()
+        R = R.reorder_layout()
 
     return Q, R
