@@ -41,14 +41,19 @@ fn _compute_householder[
         H._store(work_index, work_index, sqrt2)
         return
 
-    scale = 1.0 / norm
+    var scaling_factor = 1.0 / norm
     if H._load(work_index, work_index) < 0:
-        scale = -scale
+        scaling_factor = -scaling_factor
 
-    R._store(work_index, work_index, -1 / scale)
+    R._store(work_index, work_index, -1 / scaling_factor)
 
-    for i in range(work_index, rRows):
-        H._store(i, work_index, H._load(i, work_index) * scale)
+    @parameter
+    fn scaling_factor_vec[simd_width: Int](i: Int):
+        H._store[simd_width](
+            i, work_index, H._load[simd_width](i, work_index) * scaling_factor
+        )
+
+    vectorize[scaling_factor_vec, simd_width](rRows)
 
     increment = H._load(work_index, work_index) + 1.0
     H._store(work_index, work_index, increment)
