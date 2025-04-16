@@ -324,42 +324,64 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
+](A: Matrix[dtype], mode: String = "reduced") raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
     """
-    Computes the QR decomposition using Householder transformations.
-
-    For best performance, pass `A` in F-contiguous (column-major) layout. If `A` is
-    C-contiguous, this function automatically reorders `A` to F-contiguous, then
-    reverts the resulting Q and R to the original layout before returning.
+    Computes the QR decomposition of matrix A using Householder transformations, returning (Q, R). 
 
     Args:
         A: The input matrix.
+        mode: 'reduced' or 'complete'. 
+            - 'reduced': returns Q with dimensions (m, min(m,n)) and R with dimensions (min(m,n), n).
+            - 'complete': returns Q with dimensions (m, m) and R with dimensions (m, n).
 
-    Returns:
-        A tuple `(Q, R)` where `Q` is orthonormal and `R` is upper-triangular.
+    For best performance, pass A in F-contiguous (column-major) layout. If A is
+    C-contiguous, this function automatically reorders A to F-contiguous, then
+    reverts the resulting Q and R to the original layout before returning.
     """
+
+    if mode != "reduced" and mode != "complete":
+        raise Error("Unsupported QR mode: {}. Use 'reduced' or 'complete'".format(mode))
+
     var R: Matrix[dtype] = A
     var c_contigous: Bool = False
-
-    if A.flags.C_CONTIGUOUS:
-        R = A.reorder_layout()
 
     var m = R.shape[0]
     var n = R.shape[1]
 
     var min_n = min(m, n)
-    var H = Matrix.zeros[dtype](shape=(m, min_n), c_contigous=c_contigous)
+
+    var dim_inner: Int
+    
+    if mode == "reduced":
+        dim_inner = min_n
+    else:
+        dim_inner = n
+
+    if A.flags.C_CONTIGUOUS:
+        R = A.reorder_layout()
+    
+    print("R: ", R)
+
+    var H = Matrix.zeros[dtype](shape=(m, dim_inner), c_contigous=c_contigous)
 
     for i in range(min_n):
         _compute_householder(H, R, i)
         _apply_householder(H, i, R, i, i + 1)
 
-    var Q = Matrix.identity[dtype](m, c_contigous=c_contigous)
+    var Q = Matrix.zeros[dtype]((m, dim_inner), c_contigous)
+    for i in range(dim_inner):
+        Q._store(i, i, 1.0)
+    
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
-
+    
     if A.flags.C_CONTIGUOUS:
-        Q = Q.reorder_layout()
-        R = R.reorder_layout()
-
-    return Q, R
+        if mode == "reduced":
+            return Q[:, :min_n].reorder_layout(), R[:min_n, :].reorder_layout()
+        else:
+            return Q.reorder_layout(), R.reorder_layout()
+    else:
+        if mode == "reduced":
+            return Q[:, :min_n], R[:min_n, :]
+        else:
+            return Q, R
