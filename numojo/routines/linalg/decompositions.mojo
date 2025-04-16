@@ -330,7 +330,7 @@ fn qr[
     """
     Computes the QR decomposition using Householder transformations. For best
     performance, the input matrix should be in column-major order.
-    
+
     Args:
         A: The input matrix.
         mode: The mode of the decomposition. Can be "complete" or "reduced" simillar to numpy's QR decomposition.
