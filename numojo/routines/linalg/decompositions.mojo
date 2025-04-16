@@ -360,13 +360,10 @@ fn qr[
     if A.flags.C_CONTIGUOUS:
         reorder = True
 
-    fn set_layout(A: Matrix[dtype], c_contiguous: Bool) -> Matrix[dtype]:
-        if c_contiguous:
-            return A.reorder_layout()
-        else:
-            return A
-
-    R = set_layout(A, reorder)
+    if reorder:
+        R = A.reorder_layout()
+    else:
+        R = A
 
     var H = Matrix.zeros[dtype](shape=(m, min_n), order="F")
 
@@ -378,4 +375,11 @@ fn qr[
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
 
-    return set_layout(Q[:, :inner], reorder), set_layout(R[:inner, :], reorder)
+    if reorder:
+        Q = Q[:, :inner].reorder_layout()
+        R = R[:inner, :].reorder_layout()
+    else:
+        Q = Q[:, :inner]
+        R = R[:inner, :]
+
+    return Q, R
