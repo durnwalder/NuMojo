@@ -10,6 +10,8 @@
 from algorithm import parallelize, vectorize
 from memory import UnsafePointer, memcpy, memset_zero
 from random import random_float64
+from random import random as builtin_random
+
 from sys import simdwidthof
 from python import PythonObject, Python
 
@@ -1357,7 +1359,36 @@ struct Matrix[dtype: DType = DType.float64](
                 i * matrix.strides[0] + i * matrix.strides[1], 1
             )
         return matrix^
+    
+    @staticmethod
+    fn randn[
+        dtype: DType = DType.float64
+    ](shape: Tuple[Int, Int], order: String = "C") -> Matrix[dtype]:
+        """
+        Creates a Matrix of the given shape and populate it with random samples from
+        a standard normal distribution.
 
+        Parameters:
+            dtype: The data type of the Matrix elements.
+
+        Args:
+            shape: The shape of the Matrix.
+
+        Returns:
+            An array of the given shape and populate it with random samples from
+            a standard normal distribution.
+        """
+
+        builtin_random.seed()
+
+        var result = Matrix[dtype](shape, order)
+
+        builtin_random.randn[dtype](
+            ptr=result._buf.ptr,
+            size=result.size,
+        )
+
+        return result^
     @staticmethod
     fn rand[
         dtype: DType = DType.float64
