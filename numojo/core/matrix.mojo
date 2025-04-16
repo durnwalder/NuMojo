@@ -1359,7 +1359,7 @@ struct Matrix[dtype: DType = DType.float64](
                 i * matrix.strides[0] + i * matrix.strides[1], 1
             )
         return matrix^
-    
+
     @staticmethod
     fn randn[
         dtype: DType = DType.float64
@@ -1389,6 +1389,7 @@ struct Matrix[dtype: DType = DType.float64](
         )
 
         return result^
+
     @staticmethod
     fn rand[
         dtype: DType = DType.float64
