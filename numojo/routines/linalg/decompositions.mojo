@@ -324,7 +324,9 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](A: Matrix[dtype]) raises -> Tuple[Matrix[dtype], Matrix[dtype]]:
+](A: Matrix[dtype], mode: String = "reduced") raises -> Tuple[
+    Matrix[dtype], Matrix[dtype]
+]:
     """
     Computes the QR decomposition using Householder transformations.
 
@@ -338,15 +340,34 @@ fn qr[
     Returns:
         A tuple `(Q, R)` where `Q` is orthonormal and `R` is upper-triangular.
     """
+    var inner: Int
+    var reorder: Bool = False
+
+    var m = A.shape[0]
+    var n = A.shape[1]
+
+    var min_n = min(m, n)
+
+    if mode == "reduced":
+        inner = min_n
+    elif mode == "full":
+        inner = m
+    else:
+        raise Error(String("Invalid mode: {}").format(mode))
+
     var R: Matrix[dtype] = A
 
     if A.flags.C_CONTIGUOUS:
-        R = A.reorder_layout()
+        reorder = True
 
-    var m = R.shape[0]
-    var n = R.shape[1]
+    fn set_layout(A: Matrix[dtype], c_contiguous: Bool) -> Matrix[dtype]:
+        if c_contiguous:
+            return A.reorder_layout()
+        else:
+            return A
 
-    var min_n = min(m, n)
+    R = set_layout(A, reorder)
+
     var H = Matrix.zeros[dtype](shape=(m, min_n), order="F")
 
     for i in range(min_n):
@@ -357,8 +378,4 @@ fn qr[
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
 
-    if A.flags.C_CONTIGUOUS:
-        Q = Q.reorder_layout()
-        R = R.reorder_layout()
-
-    return Q, R
+    return set_layout(Q[:, :inner], reorder), set_layout(R[:inner, :], reorder)
