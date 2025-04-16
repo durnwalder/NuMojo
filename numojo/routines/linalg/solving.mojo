@@ -19,6 +19,9 @@ from numojo.core.matrix import Matrix
 from numojo.routines.creation import zeros, eye, full
 from numojo.routines.linalg.decompositions import partial_pivoting
 
+from algorithm import parallelize, vectorize
+from sys import simdwidthof
+
 
 fn forward_substitution[
     dtype: DType
@@ -225,9 +228,31 @@ fn lstsq[
             )
         )
 
-    var X_prime = X.T()
-    var b = (X_prime @ X).inv() @ X_prime @ y
+    Q, R = qr(X)
+    var Qt_y = Q.T() @ y
+    var b = back_substitution(R, Qt_y)
     return b^
+
+
+fn back_substitution[
+    dtype: DType
+](U: Matrix[dtype], y: Matrix[dtype]) raises -> Matrix[dtype]:
+    if U.shape[1] != U.shape[0]:
+        raise Error("Matrix U must be square.")
+    if y.shape[1] != 1 or y.shape[0] != U.shape[0]:
+        raise Error("Vector y must match U’s row size.")
+
+    var m = U.shape[0]
+    var x = Matrix.zeros[dtype]((m, 1))
+
+    for i in range(m - 1, -1, -1):
+        var value_on_hold: Scalar[dtype] = y._load(i, 0)
+        for j in range(i + 1, m):
+            value_on_hold = value_on_hold - U._load(i, j) * x._load(j, 0)
+        value_on_hold = value_on_hold / U._load(i, i)
+        x._store(i, 0, value_on_hold)
+
+    return x^
 
 
 fn solve[
