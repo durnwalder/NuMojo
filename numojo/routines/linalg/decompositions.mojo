@@ -328,12 +328,9 @@ fn qr[
     Matrix[dtype], Matrix[dtype]
 ]:
     """
-    Computes the QR decomposition using Householder transformations.
-
-    For best performance, pass `A` in F-contiguous (column-major) layout. If `A` is
-    C-contiguous, this function automatically reorders `A` to F-contiguous, then
-    reverts the resulting Q and R to the original layout before returning.
-
+    Computes the QR decomposition using Householder transformations. For best
+    performance, the input matrix should be in column-major order.
+    
     Args:
         A: The input matrix.
         mode: The mode of the decomposition. Can be "complete" or "reduced" simillar to numpy's QR decomposition.
