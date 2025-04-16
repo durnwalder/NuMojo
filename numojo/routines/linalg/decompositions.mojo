@@ -349,12 +349,12 @@ fn qr[
 
     var min_n = min(m, n)
 
-    if mode == "reduced" and m != n:
-        reduce = True
-        inner = min_n
-    elif mode == "full":
+    if mode == "full" or m == n:
         reduce = False
         inner = m
+    elif mode == "reduced":
+        reduce = True
+        inner = min_n
     else:
         raise Error(String("Invalid mode: {}").format(mode))
 
