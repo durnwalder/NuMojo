@@ -380,8 +380,12 @@ fn qr[
 
     if reorder:
         Q = Q.reorder_layout()
-        R = R[:inner, :].reorder_layout()
+        if mode == "reduced":
+            R = R[:inner, :].reorder_layout()
+        else:
+            R = R.reorder_layout()
     else:
-        R = R[:inner, :]
+        if mode == "reduced":
+            R = R[:inner, :]
 
     return Q^, R^
