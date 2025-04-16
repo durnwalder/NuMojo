@@ -336,7 +336,9 @@ fn qr[
 
     Args:
         A: The input matrix.
-
+        mode: The mode of the decomposition. Can be "complete" or "reduced" simillar to numpy's QR decomposition.
+            - "complete": Returns Q and R such that A = QR, where Q is m x m and R is m x n.
+            - "reduced": Returns Q and R such that A = QR, where Q is m x min(m,n) and R is min(m,n) x n.
     Returns:
         A tuple `(Q, R)` where `Q` is orthonormal and `R` is upper-triangular.
     """
@@ -349,7 +351,7 @@ fn qr[
 
     var min_n = min(m, n)
 
-    if mode == "full" or m == n:
+    if mode == "complete" or m == n:
         reduce = False
         inner = m
     elif mode == "reduced":
