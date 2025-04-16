@@ -324,7 +324,7 @@ fn partial_pivoting[
 
 fn qr[
     dtype: DType
-](A: Matrix[dtype], mode: String = "reduced") raises -> Tuple[
+](A: Matrix[dtype], mode: String = "full") raises -> Tuple[
     Matrix[dtype], Matrix[dtype]
 ]:
     """
