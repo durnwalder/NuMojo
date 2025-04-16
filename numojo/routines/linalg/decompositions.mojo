@@ -342,15 +342,18 @@ fn qr[
     """
     var inner: Int
     var reorder: Bool = False
+    var reduce: Bool = False
 
     var m = A.shape[0]
     var n = A.shape[1]
 
     var min_n = min(m, n)
 
-    if mode == "reduced":
+    if mode == "reduced" and m != n:
+        reduce = True
         inner = min_n
     elif mode == "full":
+        reduce = False
         inner = m
     else:
         raise Error(String("Invalid mode: {}").format(mode))
@@ -380,12 +383,12 @@ fn qr[
 
     if reorder:
         Q = Q.reorder_layout()
-        if mode == "reduced":
+        if reduce:
             R = R[:inner, :].reorder_layout()
         else:
             R = R.reorder_layout()
     else:
-        if mode == "reduced":
+        if reduce:
             R = R[:inner, :]
 
     return Q^, R^
