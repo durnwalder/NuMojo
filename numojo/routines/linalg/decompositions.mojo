@@ -371,15 +371,17 @@ fn qr[
         _compute_householder(H, R, i)
         _apply_householder(H, i, R, i, i + 1)
 
-    var Q = Matrix.identity[dtype](m, order="F")
+    var Q = Matrix.zeros[dtype]((m, inner), order="F")
+    for i in range(inner):
+        Q[i, i] = 1.0
+
     for i in range(min_n - 1, -1, -1):
         _apply_householder(H, i, Q, i, i)
 
     if reorder:
-        Q = Q[:, :inner].reorder_layout()
+        Q = Q.reorder_layout()
         R = R[:inner, :].reorder_layout()
     else:
-        Q = Q[:, :inner]
         R = R[:inner, :]
 
-    return Q, R
+    return Q^, R^
