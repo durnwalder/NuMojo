@@ -252,13 +252,38 @@ def test_qr_decomposition_asym_reduced():
     )
 
     var A_test = Q @ R
-    assert_true(
-        np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14),
-        "QR decomposition mismatch for reduced.",
-    )
+    assert_true(np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14))
 
 
 def test_qr_decomposition_asym_complete():
+    var np = Python.import_module("numpy")
+    var A = Matrix.rand[f64]((12, 5))
+    Q, R = nm.linalg.qr(A, mode="complete")
+
+    assert_true(
+        Q.shape[0] == 12 and Q.shape[1] == 12,
+        "Q has unexpected shape for complete.",
+    )
+    assert_true(
+        R.shape[0] == 12 and R.shape[1] == 5,
+        "R has unexpected shape for complete.",
+    )
+
+    var id = Q.transpose() @ Q
+    assert_true(
+        np.allclose(id.to_numpy(), np.eye(Q.shape[0]), atol=1e-14),
+        "Q not orthonormal for complete.",
+    )
+    assert_true(
+        np.allclose(R.to_numpy(), np.triu(R.to_numpy()), atol=1e-14),
+        "R not upper triangular for complete.",
+    )
+
+    var A_test = Q @ R
+    assert_true(np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14))
+
+
+def test_qr_decomposition_asym_complete2():
     var np = Python.import_module("numpy")
     var A = Matrix.rand[f64]((5, 12))
     Q, R = nm.linalg.qr(A, mode="complete")
@@ -283,10 +308,7 @@ def test_qr_decomposition_asym_complete():
     )
 
     var A_test = Q @ R
-    assert_true(
-        np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14),
-        "QR decomposition mismatch for complete.",
-    )
+    assert_true(np.allclose(A_test.to_numpy(), A.to_numpy(), atol=1e-14))
 
 
 # ===-----------------------------------------------------------------------===#
