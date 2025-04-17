@@ -159,16 +159,21 @@ fn max[dtype: DType](A: Matrix[dtype], axis: Int) raises -> Matrix[dtype]:
     if axis == 1:
         var B = Matrix[dtype](shape=(A.shape[0], 1))
         for i in range(A.shape[0]):
-            B._store(
-                i,
-                0,
-                _max(A, start=i * A.strides[0], end=(i + 1) * A.strides[0] - 1)[
-                    0
-                ],
-            )
+            var max_val = A[i, 0]
+            for j in range(1, A.shape[1]):
+                if A[i, j] > max_val:
+                    max_val = A[i, j]
+            B[i, 0] = max_val
         return B^
     elif axis == 0:
-        return transpose(max(transpose(A), axis=1))
+        var B = Matrix[dtype](shape=(1, A.shape[1]))
+        for j in range(A.shape[1]):
+            var max_val = A[0, j]
+            for i in range(1, A.shape[0]):
+                if A[i, j] > max_val:
+                    max_val = A[i, j]
+            B[0, j] = max_val
+        return B^
     else:
         raise Error(String("The axis can either be 1 or 0!"))
 
