@@ -287,24 +287,42 @@ fn cumsum[
     print(mat.cumsum(A, axis=1))
     ```
     """
-
     alias width: Int = simdwidthof[dtype]()
 
     if axis == 0:
-        for i in range(1, A.shape[0]):
+        if A.flags.C_CONTIGUOUS:
+            for i in range(1, A.shape[0]):
 
-            @parameter
-            fn cal_vec_sum[width: Int](j: Int):
-                A._store[width](
-                    i, j, A._load[width](i - 1, j) + A._load[width](i, j)
-                )
+                @parameter
+                fn cal_vec_sum_column[width: Int](j: Int):
+                    A._store[width](
+                        i, j, A._load[width](i - 1, j) + A._load[width](i, j)
+                    )
 
-            vectorize[cal_vec_sum, width](A.shape[1])
-
-        return A^
+                vectorize[cal_vec_sum_column, width](A.shape[1])
+            return A^
+        else:
+            for j in range(A.shape[1]):
+                for i in range(1, A.shape[0]):
+                    A[i, j] = A[i - 1, j] + A[i, j]
+            return A^
 
     elif axis == 1:
-        return transpose(cumsum(transpose(A), axis=0))
+        if A.flags.C_CONTIGUOUS:
+            for i in range(A.shape[0]):
+                for j in range(1, A.shape[1]):
+                    A[i, j] = A[i, j - 1] + A[i, j]
+            return A^
+        else:
+            for j in range(1, A.shape[1]):
 
+                @parameter
+                fn cal_vec_sum_row[width: Int](i: Int):
+                    A._store[width](
+                        i, j, A._load[width](i, j - 1) + A._load[width](i, j)
+                    )
+
+                vectorize[cal_vec_sum_row, width](A.shape[0])
+            return A^
     else:
         raise Error(String("The axis can either be 1 or 0!"))
