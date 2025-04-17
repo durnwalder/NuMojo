@@ -1611,7 +1611,11 @@ fn _arithmetic_func_matrix_to_matrix[
     """
     alias simd_width = simdwidthof[dtype]()
 
-    var C = Matrix[dtype](shape=A.shape)
+    var order = "F"
+    if A.flags.C_CONTIGUOUS:
+        order = "C"
+
+    var C = Matrix[dtype](shape=A.shape, order=order)
 
     @parameter
     fn vec_func[simd_width: Int](i: Int):
