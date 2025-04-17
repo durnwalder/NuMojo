@@ -113,7 +113,7 @@ struct Matrix[dtype: DType = DType.float64](
     fn __init__(
         mut self,
         shape: Tuple[Int, Int],
-        order: String = "C",
+        order: String = "F",
     ):
         """
         Create a new matrix of the given shape,without initializing data.
