@@ -266,9 +266,15 @@ struct Matrix[dtype: DType = DType.float64](
                 )
             )
 
-        var res = Self(shape=(1, self.shape[1]))
-        var ptr = self._buf.ptr.offset(x * self.shape[1])
-        memcpy(res._buf.ptr, ptr, res.size)
+        var res = Self(shape=(1, self.shape[1]), order=self.order())
+
+        if self.flags.C_CONTIGUOUS:
+            var ptr = self._buf.ptr.offset(x * self.strides[0])
+            memcpy(res._buf.ptr, ptr, self.shape[1])
+        else:
+            for j in range(self.shape[1]):
+                res[0, j] = self[x, j]
+
         return res
 
     fn __getitem__(self, x: Slice, y: Slice) -> Self:
@@ -312,7 +318,7 @@ struct Matrix[dtype: DType = DType.float64](
         var range_x = range(start_x, end_x, step_x)
 
         # The new matrix with the corresponding shape
-        var B = Matrix[dtype](shape=(len(range_x), 1))
+        var B = Matrix[dtype](shape=(len(range_x), 1), order=self.order())
 
         # Fill in the values at the corresponding index
         var c = 0
@@ -336,7 +342,7 @@ struct Matrix[dtype: DType = DType.float64](
         var range_y = range(start_y, end_y, step_y)
 
         # The new matrix with the corresponding shape
-        var B = Matrix[dtype](shape=(1, len(range_y)))
+        var B = Matrix[dtype](shape=(1, len(range_y)), order=self.order())
 
         # Fill in the values at the corresponding index
         var c = 0
@@ -1109,7 +1115,7 @@ struct Matrix[dtype: DType = DType.float64](
         Change shape and size of matrix in-place.
         """
         if shape[0] * shape[1] > self.size:
-            var other = Self(shape=shape)
+            var other = Self(shape=shape, order=self.order())
             memcpy(other._buf.ptr, self._buf.ptr, self.size)
             for i in range(self.size, other.size):
                 other._buf.ptr[i] = 0
