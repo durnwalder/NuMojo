@@ -293,7 +293,9 @@ struct Matrix[dtype: DType = DType.float64](
         var range_y = range(start_y, end_y, step_y)
 
         # The new matrix with the corresponding shape
-        var B = Matrix[dtype](shape=(len(range_x), len(range_y)))
+        var B = Matrix[dtype](
+            shape=(len(range_x), len(range_y)), order=self.order()
+        )
 
         # Fill in the values at the corresponding index
         var c = 0
