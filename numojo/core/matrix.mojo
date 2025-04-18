@@ -585,7 +585,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A + 2)
         ```
         """
-        return self + broadcast_to[dtype](other, self.shape)
+        return self + broadcast_to[dtype](other, self.shape, self.order())
 
     fn __radd__(self, other: Scalar[dtype]) raises -> Self:
         """
@@ -597,7 +597,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(2 + A)
         ```
         """
-        return broadcast_to[dtype](other, self.shape) + self
+        return broadcast_to[dtype](other, self.shape, self.order()) + self
 
     fn __sub__(self, other: Self) raises -> Self:
         if (self.shape[0] == other.shape[0]) and (
@@ -626,7 +626,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A - 2)
         ```
         """
-        return self - broadcast_to[dtype](other, self.shape)
+        return self - broadcast_to[dtype](other, self.shape, self.order())
 
     fn __rsub__(self, other: Scalar[dtype]) raises -> Self:
         """
@@ -638,7 +638,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(2 - A)
         ```
         """
-        return broadcast_to[dtype](other, self.shape) - self
+        return broadcast_to[dtype](other, self.shape, self.order()) - self
 
     fn __mul__(self, other: Self) raises -> Self:
         if (self.shape[0] == other.shape[0]) and (
@@ -667,7 +667,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A * 2)
         ```
         """
-        return self * broadcast_to[dtype](other, self.shape)
+        return self * broadcast_to[dtype](other, self.shape, self.order())
 
     fn __rmul__(self, other: Scalar[dtype]) raises -> Self:
         """
@@ -737,7 +737,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A < 2)
         ```
         """
-        return self < broadcast_to[dtype](other, self.shape)
+        return self < broadcast_to[dtype](other, self.shape, self.order())
 
     fn __le__(self, other: Self) raises -> Matrix[DType.bool]:
         if (self.shape[0] == other.shape[0]) and (
@@ -766,7 +766,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A <= 2)
         ```
         """
-        return self <= broadcast_to[dtype](other, self.shape)
+        return self <= broadcast_to[dtype](other, self.shape, self.order())
 
     fn __gt__(self, other: Self) raises -> Matrix[DType.bool]:
         if (self.shape[0] == other.shape[0]) and (
@@ -795,7 +795,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A > 2)
         ```
         """
-        return self > broadcast_to[dtype](other, self.shape)
+        return self > broadcast_to[dtype](other, self.shape, self.order())
 
     fn __ge__(self, other: Self) raises -> Matrix[DType.bool]:
         if (self.shape[0] == other.shape[0]) and (
@@ -824,7 +824,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A >= 2)
         ```
         """
-        return self >= broadcast_to[dtype](other, self.shape)
+        return self >= broadcast_to[dtype](other, self.shape, self.order())
 
     fn __eq__(self, other: Self) raises -> Matrix[DType.bool]:
         if (self.shape[0] == other.shape[0]) and (
@@ -853,7 +853,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A == 2)
         ```
         """
-        return self == broadcast_to[dtype](other, self.shape)
+        return self == broadcast_to[dtype](other, self.shape, self.order())
 
     fn __ne__(self, other: Self) raises -> Matrix[DType.bool]:
         if (self.shape[0] == other.shape[0]) and (
@@ -882,7 +882,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(A != 2)
         ```
         """
-        return self != broadcast_to[dtype](other, self.shape)
+        return self != broadcast_to[dtype](other, self.shape, self.order())
 
     fn __matmul__(self, other: Self) raises -> Self:
         return numojo.linalg.matmul(self, other)
