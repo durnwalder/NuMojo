@@ -949,7 +949,9 @@ struct Matrix[dtype: DType = DType.float64](
         """
         Copy of the matrix, cast to a specified type.
         """
-        var res = Matrix[asdtype](shape=(self.shape[0], self.shape[1]))
+        var res = Matrix[asdtype](
+            shape=(self.shape[0], self.shape[1]), order=self.order()
+        )
         for i in range(self.size):
             res._buf.ptr[i] = self._buf.ptr[i].cast[asdtype]()
         return res^
