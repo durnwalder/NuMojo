@@ -283,8 +283,11 @@ fn transpose[dtype: DType](A: Matrix[dtype]) -> Matrix[dtype]:
     """
     Transpose of matrix.
     """
+    var order = "F"
+    if A.flags.C_CONTIGUOUS:
+        order = "C"
 
-    var B = Matrix[dtype](Tuple(A.shape[1], A.shape[0]))
+    var B = Matrix[dtype](Tuple(A.shape[1], A.shape[0]), order=order)
 
     if A.shape[0] == 1 or A.shape[1] == 1:
         memcpy(B._buf.ptr, A._buf.ptr, A.size)
