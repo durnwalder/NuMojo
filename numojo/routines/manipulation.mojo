@@ -456,13 +456,15 @@ fn broadcast_to[
 
 fn broadcast_to[
     dtype: DType
-](A: Scalar[dtype], shape: Tuple[Int, Int]) raises -> Matrix[dtype]:
+](
+    A: Scalar[dtype], shape: Tuple[Int, Int], order: String = "C"
+) raises -> Matrix[dtype]:
     """
     Broadcasts the scalar to the given shape.
     """
 
     var B = Matrix[dtype](shape)
-    B = Matrix.full[dtype](shape, A)
+    B = Matrix.full[dtype](shape, A, order=order)
     return B^
 
 

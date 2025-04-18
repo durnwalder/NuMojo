@@ -679,7 +679,7 @@ struct Matrix[dtype: DType = DType.float64](
         print(2 * A)
         ```
         """
-        return broadcast_to[dtype](other, self.shape) * self
+        return broadcast_to[dtype](other, self.shape, self.order()) * self
 
     fn __truediv__(self, other: Self) raises -> Self:
         if (self.shape[0] == other.shape[0]) and (
@@ -701,7 +701,7 @@ struct Matrix[dtype: DType = DType.float64](
 
     fn __truediv__(self, other: Scalar[dtype]) raises -> Self:
         """Divide matrix by scalar."""
-        return self / broadcast_to[dtype](other, self.shape)
+        return self / broadcast_to[dtype](other, self.shape, order=self.order())
 
     fn __pow__(self, rhs: Scalar[dtype]) raises -> Self:
         """Power of items."""
