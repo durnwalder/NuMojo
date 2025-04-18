@@ -298,11 +298,13 @@ struct Matrix[dtype: DType = DType.float64](
         )
 
         # Fill in the values at the corresponding index
-        var c = 0
+        var row = 0
         for i in range_x:
+            var col = 0
             for j in range_y:
-                B._buf.ptr[c] = self._load(i, j)
-                c += 1
+                B._store(row, col, self._load(i, j))
+                col += 1
+            row += 1
 
         return B
 
@@ -322,11 +324,11 @@ struct Matrix[dtype: DType = DType.float64](
         # The new matrix with the corresponding shape
         var B = Matrix[dtype](shape=(len(range_x), 1), order=self.order())
 
-        # Fill in the values at the corresponding index
-        var c = 0
+        # Fill in the values at the corresponding index respecting memory layout
+        var row = 0
         for i in range_x:
-            B._buf.ptr[c] = self._load(i, y)
-            c += 1
+            B._store(row, 0, self._load(i, y))
+            row += 1
 
         return B
 
@@ -347,10 +349,10 @@ struct Matrix[dtype: DType = DType.float64](
         var B = Matrix[dtype](shape=(1, len(range_y)), order=self.order())
 
         # Fill in the values at the corresponding index
-        var c = 0
+        var col = 0
         for j in range_y:
-            B._buf.ptr[c] = self._load(x, j)
-            c += 1
+            B._store(0, col, self._load(x, j))
+            col += 1
 
         return B
 
