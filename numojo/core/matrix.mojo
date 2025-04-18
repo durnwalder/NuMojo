@@ -1100,7 +1100,7 @@ struct Matrix[dtype: DType = DType.float64](
                     "Cannot reshape matrix of size {} into shape ({}, {})."
                 ).format(self.size, shape[0], shape[1])
             )
-        var res = Self(shape=shape)
+        var res = Self(shape=shape, order=self.order())
         memcpy(res._buf.ptr, self._buf.ptr, res.size)
         return res^
 
