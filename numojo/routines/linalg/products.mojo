@@ -388,7 +388,9 @@ fn matmul[
             )
         )
 
-    var C: Matrix[dtype] = Matrix.zeros[dtype](shape=(A.shape[0], B.shape[1]),order=A.order())
+    var C: Matrix[dtype] = Matrix.zeros[dtype](
+        shape=(A.shape[0], B.shape[1]), order=A.order()
+    )
 
     @parameter
     fn calculate_CC(m: Int):
