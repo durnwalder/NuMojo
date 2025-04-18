@@ -191,9 +191,13 @@ fn lu_decomposition[
 
     var n = A.shape[0]
 
+    var order = "F"
+    if A.flags.C_CONTIGUOUS == True:
+        order = "C"
+
     # Initiate upper and lower triangular matrices
-    var U = Matrix.full[dtype](shape=(n, n))
-    var L = Matrix.full[dtype](shape=(n, n))
+    var U = Matrix.full[dtype](shape=(n, n), order=order)
+    var L = Matrix.full[dtype](shape=(n, n), order=order)
 
     # Fill in L and U
     for i in range(0, n):
