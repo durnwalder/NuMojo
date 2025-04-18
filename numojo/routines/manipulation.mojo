@@ -430,11 +430,11 @@ fn broadcast_to[
     ```
     """
 
-    var B = Matrix[dtype](shape)
+    var B = Matrix[dtype](shape, order=A.order())
     if (A.shape[0] == shape[0]) and (A.shape[1] == shape[1]):
         B = A
     elif (A.shape[0] == 1) and (A.shape[1] == 1):
-        B = Matrix.full[dtype](shape, A[0, 0])
+        B = Matrix.full[dtype](shape, A[0, 0], order=A.order())
     elif (A.shape[0] == 1) and (A.shape[1] == shape[1]):
         for i in range(shape[0]):
             memcpy(

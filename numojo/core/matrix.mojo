@@ -1012,6 +1012,15 @@ struct Matrix[dtype: DType = DType.float64](
         Inverse of matrix.
         """
         return numojo.linalg.inv(self)
+        
+    fn order(self) -> String:
+        """
+        Returns the order.
+        """
+        var order = "F"
+        if self.flags.C_CONTIGUOUS:
+            order = "C"
+        return order
 
     fn max(self) raises -> Scalar[dtype]:
         """
