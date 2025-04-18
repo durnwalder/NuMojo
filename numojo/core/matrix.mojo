@@ -1012,7 +1012,7 @@ struct Matrix[dtype: DType = DType.float64](
         Inverse of matrix.
         """
         return numojo.linalg.inv(self)
-        
+
     fn order(self) -> String:
         """
         Returns the order.
@@ -1582,6 +1582,12 @@ fn _arithmetic_func_matrix_matrix_to_matrix[
     For example: `__add__`, `__sub__`, etc.
     """
     alias simd_width = simdwidthof[dtype]()
+    if A.order() != B.order():
+        raise Error(
+            String("Matrix order {} does not match {}.").format(
+                A.order(), B.order()
+            )
+        )
 
     if (A.shape[0] != B.shape[0]) or (A.shape[1] != B.shape[1]):
         raise Error(
@@ -1590,7 +1596,7 @@ fn _arithmetic_func_matrix_matrix_to_matrix[
             )
         )
 
-    var C = Matrix[dtype](shape=A.shape)
+    var C = Matrix[dtype](shape=A.shape, order=A.order())
 
     @parameter
     fn vec_func[simd_width: Int](i: Int):
@@ -1620,11 +1626,7 @@ fn _arithmetic_func_matrix_to_matrix[
     """
     alias simd_width = simdwidthof[dtype]()
 
-    var order = "F"
-    if A.flags.C_CONTIGUOUS:
-        order = "C"
-
-    var C = Matrix[dtype](shape=A.shape, order=order)
+    var C = Matrix[dtype](shape=A.shape, order=A.order())
 
     @parameter
     fn vec_func[simd_width: Int](i: Int):
@@ -1646,6 +1648,13 @@ fn _logic_func_matrix_matrix_to_matrix[
     """
     alias width = simdwidthof[dtype]()
 
+    if A.order() != B.order():
+        raise Error(
+            String("Matrix order {} does not match {}.").format(
+                A.order(), B.order()
+            )
+        )
+
     if (A.shape[0] != B.shape[0]) or (A.shape[1] != B.shape[1]):
         raise Error(
             String("Shape {}x{} does not match {}x{}.").format(
@@ -1655,7 +1664,7 @@ fn _logic_func_matrix_matrix_to_matrix[
 
     var t0 = A.shape[0]
     var t1 = A.shape[1]
-    var C = Matrix[DType.bool](shape=A.shape)
+    var C = Matrix[DType.bool](shape=A.shape, order=A.order())
 
     @parameter
     fn calculate_CC(m: Int):
