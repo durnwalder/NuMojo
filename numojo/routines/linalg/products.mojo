@@ -374,6 +374,13 @@ fn matmul[
 
     alias width = max(simdwidthof[dtype](), 16)
 
+    if A.order() != B.order():
+        raise Error(
+            String(
+                "matmul: a mismatch in order: {} is different from {}"
+            ).format(A.order(), B.order())
+        )
+
     if A.shape[1] != B.shape[0]:
         raise Error(
             String("Cannot matmul {}x{} matrix with {}x{} matrix.").format(
@@ -381,7 +388,7 @@ fn matmul[
             )
         )
 
-    var C: Matrix[dtype] = Matrix.zeros[dtype](shape=(A.shape[0], B.shape[1]))
+    var C: Matrix[dtype] = Matrix.zeros[dtype](shape=(A.shape[0], B.shape[1]),order=A.order())
 
     @parameter
     fn calculate_CC(m: Int):
