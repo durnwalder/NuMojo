@@ -123,8 +123,11 @@ fn inv[dtype: DType](A: Matrix[dtype]) raises -> Matrix[dtype]:
         raise Error(
             String("{}x{} matrix is not square.").format(A.shape[0], A.shape[1])
         )
+    var order = "F"
+    if A.flags.C_CONTIGUOUS:
+        order = "C"
 
-    var I = Matrix.identity[dtype](A.shape[0])
+    var I = Matrix.identity[dtype](A.shape[0], order=order)
     var B = solve(A, I)
 
     return B^
