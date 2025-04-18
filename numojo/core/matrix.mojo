@@ -1428,8 +1428,10 @@ struct Matrix[dtype: DType = DType.float64](
                 "The input has {} elements, but the target has the shape {}x{}"
             ).format(len(object), shape[0], shape[1])
             raise Error(message)
-        var M = Matrix[dtype](shape=shape, order=order)
+        var M = Matrix[dtype](shape=shape, order="C")
         memcpy(M._buf.ptr, object.data, M.size)
+        if order == "F":
+            M = M.reorder_layout()
         return M^
 
     @staticmethod
