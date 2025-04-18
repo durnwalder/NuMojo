@@ -456,9 +456,9 @@ fn broadcast_to[
 
 fn broadcast_to[
     dtype: DType
-](
-    A: Scalar[dtype], shape: Tuple[Int, Int], order: String = "C"
-) raises -> Matrix[dtype]:
+](A: Scalar[dtype], shape: Tuple[Int, Int], order: String) raises -> Matrix[
+    dtype
+]:
     """
     Broadcasts the scalar to the given shape.
     """
