@@ -1124,15 +1124,15 @@ struct Matrix[dtype: DType = DType.float64](
         Change shape and size of matrix in-place.
         """
         if shape[0] * shape[1] > self.size:
-            var other = Self(shape=shape, order="C")
-            if self.flags.F_CONTIGUOUS:
-                var temp = self.reorder_layout()
-                memcpy(other._buf.ptr, temp._buf.ptr, self.size)
-                other = other.reorder_layout()
-            else:
-                memcpy(other._buf.ptr, self._buf.ptr, self.size)
-            for i in range(self.size, other.size):
-                other._buf.ptr[i] = 0
+            var other = Self(shape=shape, order=self.order())
+            
+            var idx = 0
+            for i in range(shape[0]):
+                for j in range(shape[1]):
+                    var src_idx = idx % self.size
+                    other._store(i, j, self._buf.ptr[src_idx])
+                    idx += 1
+                    
             self = other
         else:
             self.shape[0] = shape[0]
