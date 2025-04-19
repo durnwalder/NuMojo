@@ -125,53 +125,64 @@ fn sum[dtype: DType](A: Matrix[dtype]) -> Scalar[dtype]:
 fn sum[dtype: DType](A: Matrix[dtype], axis: Int) raises -> Matrix[dtype]:
     """
     Sum up the items in a Matrix along the axis.
-
-    Args:
-        A: Matrix.
-        axis: 0 or 1.
-
-    Example:
-    ```mojo
-    from numojo import Matrix
-    var A = Matrix.rand(shape=(100, 100))
-    print(mat.sum(A, axis=0))
-    print(mat.sum(A, axis=1))
-    ```
+    Optimized for both C and F contiguous layouts.
     """
-
     alias width: Int = simdwidthof[dtype]()
 
     if axis == 0:
         var B = Matrix.zeros[dtype](shape=(1, A.shape[1]), order=A.order())
 
-        for i in range(A.shape[0]):
+        if A.flags.F_CONTIGUOUS:
 
             @parameter
-            fn cal_vec_sum[width: Int](j: Int):
-                B._store[width](
-                    0, j, B._load[width](0, j) + A._load[width](i, j)
-                )
+            fn calc_columns(j: Int):
+                @parameter
+                fn col_sum[width: Int](i: Int):
+                    B._store(
+                        0,
+                        j,
+                        B._load(0, j) + A._load[width=width](i, j).reduce_add(),
+                    )
 
-            vectorize[cal_vec_sum, width](A.shape[1])
+                vectorize[col_sum, width](A.shape[0])
+
+            parallelize[calc_columns](A.shape[1], A.shape[1])
+        else:
+            for i in range(A.shape[0]):
+
+                @parameter
+                fn cal_vec_sum[width: Int](j: Int):
+                    B._store[width](
+                        0, j, B._load[width](0, j) + A._load[width](i, j)
+                    )
+
+                vectorize[cal_vec_sum, width](A.shape[1])
 
         return B^
 
     elif axis == 1:
         var B = Matrix.zeros[dtype](shape=(A.shape[0], 1), order=A.order())
 
-        @parameter
-        fn cal_rows(i: Int):
+        if A.flags.C_CONTIGUOUS:
+
             @parameter
-            fn cal_vec[width: Int](j: Int):
-                B._store(
-                    i,
-                    0,
-                    B._load(i, 0) + A._load[width=width](i, j).reduce_add(),
-                )
+            fn cal_rows(i: Int):
+                @parameter
+                fn cal_vec[width: Int](j: Int):
+                    B._store(
+                        i,
+                        0,
+                        B._load(i, 0) + A._load[width=width](i, j).reduce_add(),
+                    )
 
-            vectorize[cal_vec, width](A.shape[1])
+                vectorize[cal_vec, width](A.shape[1])
 
-        parallelize[cal_rows](A.shape[0], A.shape[0])
+            parallelize[cal_rows](A.shape[0], A.shape[0])
+        else:
+            for i in range(A.shape[0]):
+                for j in range(A.shape[1]):
+                    B._store(i, 0, B._load(i, 0) + A._load(i, j))
+
         return B^
 
     else:
