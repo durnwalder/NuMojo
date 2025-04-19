@@ -421,25 +421,21 @@ fn matmul[
                 vectorize[dot_F, width](A.shape[0])
 
         parallelize[calculate_CC_F](B.shape[1], B.shape[1])
-
     elif A.flags.C_CONTIGUOUS and B.flags.F_CONTIGUOUS:
 
         @parameter
         fn calculate_optimal(m: Int):
             for n in range(B.shape[1]):
+                var sum: Scalar[dtype] = 0.0
 
                 @parameter
                 fn dot_product[simd_width: Int](k: Int):
-                    C._store(
-                        m,
-                        n,
-                        (
-                            A._load[simd_width](m, k)
-                            * B._load[simd_width](k, n)
-                        ).reduce_add(),
-                    )
+                    sum += (
+                        A._load[simd_width](m, k) * B._load[simd_width](k, n)
+                    ).reduce_add()
 
                 vectorize[dot_product, width](A.shape[1])
+                C._store(m, n, sum)
 
         parallelize[calculate_optimal](A.shape[0], A.shape[0])
 

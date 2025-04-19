@@ -304,7 +304,9 @@ fn partial_pivoting[
     Perform partial pivoting for matrix.
     """
     var n = A.shape[0]
-    var P = Matrix.identity[dtype](n, order=A.order())
+    var P = Matrix.identity[dtype](n)
+    if A.flags.F_CONTIGUOUS:
+        A = A.reorder_layout()
     var s: Int = 0  # Number of exchanges, for determinant
     for col in range(n):
         var max_p = abs(A[col, col])
@@ -318,6 +320,9 @@ fn partial_pivoting[
 
         if max_p_row != col:
             s = s + 1
+    if A.flags.F_CONTIGUOUS:
+        A = A.reorder_layout()
+        P = P.reorder_layout()
 
     return Tuple(A^, P^, s)
 
