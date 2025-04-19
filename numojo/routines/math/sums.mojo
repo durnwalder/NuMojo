@@ -142,7 +142,7 @@ fn sum[dtype: DType](A: Matrix[dtype], axis: Int) raises -> Matrix[dtype]:
     alias width: Int = simdwidthof[dtype]()
 
     if axis == 0:
-        var B = Matrix.zeros[dtype](shape=(1, A.shape[1]))
+        var B = Matrix.zeros[dtype](shape=(1, A.shape[1]), order=A.order())
 
         for i in range(A.shape[0]):
 
@@ -157,7 +157,7 @@ fn sum[dtype: DType](A: Matrix[dtype], axis: Int) raises -> Matrix[dtype]:
         return B^
 
     elif axis == 1:
-        var B = Matrix.zeros[dtype](shape=(A.shape[0], 1))
+        var B = Matrix.zeros[dtype](shape=(A.shape[0], 1), order=A.order())
 
         @parameter
         fn cal_rows(i: Int):
