@@ -162,7 +162,7 @@ def test_linalg():
     var A = Matrix.rand[f64]((100, 100), order=order)
     var B = Matrix.rand[f64]((100, 100), order=order)
     var E = Matrix.fromstring(
-        "[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]", shape=(4, 3)
+        "[[1,2,3],[4,5,6],[7,8,9],[10,11,12]]", shape=(4, 3), order=order
     )
     var Y = Matrix.rand((100, 1), order=order)
     var Anp = A.to_numpy()

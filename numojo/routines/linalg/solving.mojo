@@ -373,18 +373,14 @@ fn solve[
     var U: Matrix[dtype]
     var L: Matrix[dtype]
 
-    var order = "F"
-    if A.flags.C_CONTIGUOUS == True:
-        order = "C"
-
     A_pivoted, P, _ = partial_pivoting(A)
     L, U = lu_decomposition[dtype](A_pivoted)
 
     var m = A.shape[0]
     var n = Y.shape[1]
 
-    var Z = Matrix.full[dtype]((m, n), order=order)
-    var X = Matrix.full[dtype]((m, n), order=order)
+    var Z = Matrix.full[dtype]((m, n), order=A.order())
+    var X = Matrix.full[dtype]((m, n), order=A.order())
 
     var PY = P @ Y
 
