@@ -73,7 +73,7 @@ def test_manipulation():
 def test_full():
     var np = Python.import_module("numpy")
     check_matrices_equal(
-        Matrix.full[f64]((10, 10), order=order),
+        Matrix.full[f64]((10, 10), 10, order=order),
         np.full((10, 10), 10, dtype=np.float64),
         "Full is broken",
     )
