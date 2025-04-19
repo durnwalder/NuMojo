@@ -103,33 +103,43 @@ fn sort[
     """
     Sort the Matrix along the given axis.
     """
-    var order = "F"
-    if A.flags.C_CONTIGUOUS:
-        order = "C"
+    var order = A.order()
 
     if axis == 1:
-        var I = Matrix.zeros[DType.index](shape=A.shape, order=order)
+        var result = Matrix[dtype](shape=A.shape, order=order)
+
         for i in range(A.shape[0]):
-            _sort_inplace(
-                A, I, left=i * A.strides[0], right=(i + 1) * A.strides[0] - 1
+            var row = Matrix[dtype](shape=(1, A.shape[1]), order="C")
+            var indices = Matrix.zeros[DType.index](
+                shape=(1, A.shape[1]), order="C"
             )
-        return A^
+
+            for j in range(A.shape[1]):
+                row._store(0, j, A._load(i, j))
+
+            _sort_inplace(row, indices, 0, row.size - 1)
+
+            for j in range(A.shape[1]):
+                result._store(i, j, row._load(0, j))
+
+        return result^
+
     elif axis == 0:
         var result = Matrix[dtype](shape=A.shape, order=order)
-        var I = Matrix.zeros[DType.index](shape=(1, A.shape[0]), order=order)
 
         for j in range(A.shape[1]):
-            var col = Matrix[dtype](shape=(A.shape[0], 1), order=order)
-            for i in range(A.shape[0]):
-                col[i, 0] = A[i, j]
-
-            for k in range(I.size):
-                I._buf.ptr[k] = k
-
-            _sort_inplace(col, I, 0, col.size - 1)
+            var col = Matrix[dtype](shape=(A.shape[0], 1), order="C")
+            var indices = Matrix.zeros[DType.index](
+                shape=(A.shape[0], 1), order="C"
+            )
 
             for i in range(A.shape[0]):
-                result[i, j] = col[i, 0]
+                col._store(i, 0, A._load(i, j))
+
+            _sort_inplace(col, indices, 0, col.size - 1)
+
+            for i in range(A.shape[0]):
+                result._store(i, j, col._load(i, 0))
 
         return result^
     else:
@@ -217,35 +227,44 @@ fn argsort[dtype: DType](A: Matrix[dtype]) raises -> Matrix[DType.index]:
 fn argsort[
     dtype: DType
 ](owned A: Matrix[dtype], axis: Int) raises -> Matrix[DType.index]:
-    var order = "F"
-    if A.flags.C_CONTIGUOUS:
-        order = "C"
+    """
+    Returns the indices that would sort a matrix along the specified axis.
+    """
+    var order = A.order()
+
     if axis == 1:
-        var I = Matrix[DType.index](shape=A.shape, order=order)
-        for i in range(I.shape[0]):
-            for j in range(I.shape[1]):
-                I._store(i, j, j)
+        var result = Matrix[DType.index](shape=A.shape, order=order)
 
         for i in range(A.shape[0]):
-            _sort_inplace(
-                A, I, left=i * A.strides[0], right=(i + 1) * A.strides[0] - 1
-            )
-        return I^
+            var row = Matrix[dtype](shape=(1, A.shape[1]), order="C")
+            var idx = Matrix[DType.index](shape=(1, A.shape[1]), order="C")
+
+            for j in range(A.shape[1]):
+                row._store(0, j, A._load(i, j))
+                idx._store(0, j, j)
+
+            _sort_inplace(row, idx, 0, row.size - 1)
+
+            for j in range(A.shape[1]):
+                result._store(i, j, idx._load(0, j))
+
+        return result^
+
     elif axis == 0:
         var result = Matrix[DType.index](shape=A.shape, order=order)
 
         for j in range(A.shape[1]):
-            var col = Matrix[dtype](shape=(A.shape[0], 1), order=order)
-            var idx = Matrix[DType.index](shape=(A.shape[0], 1), order=order)
+            var col = Matrix[dtype](shape=(A.shape[0], 1), order="C")
+            var idx = Matrix[DType.index](shape=(A.shape[0], 1), order="C")
 
             for i in range(A.shape[0]):
-                col[i, 0] = A[i, j]
-                idx[i, 0] = i
+                col._store(i, 0, A._load(i, j))
+                idx._store(i, 0, i)
 
             _sort_inplace(col, idx, 0, col.size - 1)
 
             for i in range(A.shape[0]):
-                result[i, j] = idx[i, 0]
+                result._store(i, j, idx._load(i, 0))
 
         return result^
     else:
