@@ -271,11 +271,18 @@ fn cumsum[dtype: DType](owned A: Matrix[dtype]) -> Matrix[dtype]:
     print(mat.cumsum(A))
     ```
     """
+    var reorder = False
+    if A.flags.F_CONTIGUOUS:
+        reorder = True
+        A = A.reorder_layout()
 
     A.resize(shape=(1, A.size))
 
     for i in range(1, A.size):
         A._buf.ptr[i] += A._buf.ptr[i - 1]
+
+    if reorder:
+        A = A.reorder_layout()
 
     return A^
 
