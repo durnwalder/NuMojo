@@ -1015,7 +1015,7 @@ struct Matrix[dtype: DType = DType.float64](
         """
         Return a flattened copy of the matrix.
         """
-        var res = Self(shape=(1, self.size))
+        var res = Self(shape=(1, self.size), order=self.order())
         memcpy(res._buf.ptr, self._buf.ptr, res.size)
         return res^
 
