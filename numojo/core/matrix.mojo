@@ -1111,7 +1111,12 @@ struct Matrix[dtype: DType = DType.float64](
                 ).format(self.size, shape[0], shape[1])
             )
         var res = Self(shape=shape, order=self.order())
-        memcpy(res._buf.ptr, self._buf.ptr, res.size)
+        if self.flags.F_CONTIGUOUS:
+            var temp = self.reorder_layout()
+            memcpy(res._buf.ptr, temp._buf.ptr, res.size)
+            res = res.reorder_layout()
+        else:
+            memcpy(res._buf.ptr, self._buf.ptr, res.size)
         return res^
 
     fn resize(mut self, shape: Tuple[Int, Int]):
