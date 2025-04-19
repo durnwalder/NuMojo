@@ -1121,13 +1121,24 @@ struct Matrix[dtype: DType = DType.float64](
 
     fn resize(mut self, shape: Tuple[Int, Int]):
         """
-        Change shape and size of matrix in-place.
+        Change shape and size of matrix in-place, matching NumPy's behavior.
         """
         if shape[0] * shape[1] > self.size:
             var other = Self(shape=shape)
-            memcpy(other._buf.ptr, self._buf.ptr, self.size)
-            for i in range(self.size, other.size):
-                other._buf.ptr[i] = 0.0
+
+            var idx = 0
+            for i in range(other.size):
+                other._buf.ptr.store(i, 0.0)
+                if idx < self.size:
+                    if self.flags.C_CONTIGUOUS:
+                        other._buf.ptr[i] = self._buf.ptr[i]
+                    if self.flags.F_CONTIGUOUS:
+                        other._buf.ptr[i] = self._buf.ptr[
+                            (i % self.shape[1]) * self.shape[0]
+                            + (i // self.shape[1])
+                        ]
+                    idx += 1
+
             if self.flags.F_CONTIGUOUS:
                 other = other.reorder_layout()
             self = other
@@ -1135,7 +1146,14 @@ struct Matrix[dtype: DType = DType.float64](
             self.shape[0] = shape[0]
             self.shape[1] = shape[1]
             self.size = shape[0] * shape[1]
-            self.strides[0] = shape[1]
+
+            # Update strides based on layout
+            if self.flags.F_CONTIGUOUS:
+                self.strides[0] = 1
+                self.strides[1] = shape[0]
+            else:
+                self.strides[0] = shape[1]
+                self.strides[1] = 1
 
     fn round(self, decimals: Int) raises -> Self:
         return numojo.math.rounding.round(self, decimals=decimals)
