@@ -374,13 +374,6 @@ fn matmul[
 
     alias width = max(simdwidthof[dtype](), 16)
 
-    if A.order() != B.order():
-        raise Error(
-            String(
-                "matmul: a mismatch in order: {} is different from {}"
-            ).format(A.order(), B.order())
-        )
-
     if A.shape[1] != B.shape[0]:
         raise Error(
             String("Cannot matmul {}x{} matrix with {}x{} matrix.").format(
@@ -392,23 +385,92 @@ fn matmul[
         shape=(A.shape[0], B.shape[1]), order=A.order()
     )
 
-    @parameter
-    fn calculate_CC(m: Int):
-        for k in range(A.shape[1]):
+    if A.flags.C_CONTIGUOUS and B.flags.C_CONTIGUOUS:
 
-            @parameter
-            fn dot[simd_width: Int](n: Int):
-                C._store[simd_width](
-                    m,
-                    n,
-                    C._load[simd_width](m, n)
-                    + A._load(m, k) * B._load[simd_width](k, n),
-                )
+        @parameter
+        fn calculate_CC(m: Int):
+            for k in range(A.shape[1]):
 
-            vectorize[dot, width](B.shape[1])
+                @parameter
+                fn dot[simd_width: Int](n: Int):
+                    C._store[simd_width](
+                        m,
+                        n,
+                        C._load[simd_width](m, n)
+                        + A._load(m, k) * B._load[simd_width](k, n),
+                    )
 
-    parallelize[calculate_CC](A.shape[0], A.shape[0])
+                vectorize[dot, width](B.shape[1])
 
+        parallelize[calculate_CC](A.shape[0], A.shape[0])
+    elif A.flags.F_CONTIGUOUS and B.flags.F_CONTIGUOUS:
+
+        @parameter
+        fn calculate_CC_F(n: Int):
+            for k in range(A.shape[1]):
+
+                @parameter
+                fn dot_F[simd_width: Int](m: Int):
+                    C._store[simd_width](
+                        m,
+                        n,
+                        C._load[simd_width](m, n)
+                        + A._load[simd_width](m, k) * B._load(k, n),
+                    )
+
+                vectorize[dot_F, width](A.shape[0])
+
+        parallelize[calculate_CC_F](B.shape[1], B.shape[1])
+
+    elif A.flags.C_CONTIGUOUS and B.flags.F_CONTIGUOUS:
+
+        @parameter
+        fn calculate_optimal(m: Int):
+            for n in range(B.shape[1]):
+
+                @parameter
+                fn dot_product[simd_width: Int](k: Int):
+                    C._store(
+                        m,
+                        n,
+                        (
+                            A._load[simd_width](m, k)
+                            * B._load[simd_width](k, n)
+                        ).reduce_add(),
+                    )
+
+                vectorize[dot_product, width](A.shape[1])
+
+        parallelize[calculate_optimal](A.shape[0], A.shape[0])
+
+    elif A.flags.F_CONTIGUOUS and B.flags.C_CONTIGUOUS:
+        alias block_size = 32
+
+        var num_blocks_i = (A.shape[0] + block_size - 1) // block_size
+        var num_blocks_j = (B.shape[1] + block_size - 1) // block_size
+        var total_blocks = num_blocks_i * num_blocks_j
+
+        @parameter
+        fn process_block(block_idx: Int):
+            var block_i = (block_idx // num_blocks_j) * block_size
+            var block_j = (block_idx % num_blocks_j) * block_size
+
+            var i_end = min(block_i + block_size, A.shape[0])
+            var j_end = min(block_j + block_size, B.shape[1])
+
+            for i in range(block_i, i_end):
+                for j in range(block_j, j_end):
+                    for k_block in range(0, A.shape[1], block_size):
+                        var k_end = min(k_block + block_size, A.shape[1])
+
+                        for k in range(k_block, k_end):
+                            C._store(
+                                i,
+                                j,
+                                C._load(i, j) + A._load(i, k) * B._load(k, j),
+                            )
+
+        parallelize[process_block](total_blocks, total_blocks)
     var _A = A
     var _B = B
 
