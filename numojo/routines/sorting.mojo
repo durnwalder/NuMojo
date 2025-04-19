@@ -216,10 +216,14 @@ fn argsort[
 
 
 fn argsort[dtype: DType](A: Matrix[dtype]) raises -> Matrix[DType.index]:
-    var I = Matrix[DType.index](shape=(1, A.size))
+    var I = Matrix[DType.index](shape=(1, A.size), order=A.order())
     for i in range(I.size):
         I._buf.ptr[i] = i
-    var B = A.flatten()
+    var B: Matrix[dtype]
+    if A.order() == "C":
+        B = A.flatten()
+    else:
+        B = A.reorder_layout().flatten().reorder_layout()
     _sort_inplace(B, I, 0, A.size - 1)
     return I^
 
