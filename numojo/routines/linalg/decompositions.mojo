@@ -219,13 +219,9 @@ fn lu_decomposition[
 
     var n = A.shape[0]
 
-    var order = "F"
-    if A.flags.C_CONTIGUOUS == True:
-        order = "C"
-
     # Initiate upper and lower triangular matrices
-    var U = Matrix.full[dtype](shape=(n, n), order=order)
-    var L = Matrix.full[dtype](shape=(n, n), order=order)
+    var U = Matrix.full[dtype](shape=(n, n), order=A.order())
+    var L = Matrix.full[dtype](shape=(n, n), order=A.order())
 
     # Fill in L and U
     for i in range(0, n):
@@ -308,7 +304,7 @@ fn partial_pivoting[
     Perform partial pivoting for matrix.
     """
     var n = A.shape[0]
-    var P = Matrix.identity[dtype](n)
+    var P = Matrix.identity[dtype](n, order=A.order())
     var s: Int = 0  # Number of exchanges, for determinant
     for col in range(n):
         var max_p = abs(A[col, col])
