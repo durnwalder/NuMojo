@@ -1125,19 +1125,15 @@ struct Matrix[dtype: DType = DType.float64](
         """
         if shape[0] * shape[1] > self.size:
             var other = Self(shape=shape, order=self.order())
-            var flat = self.flatten()
-            var idx = 0
-            for i in range(shape[0]):
-                for j in range(shape[1]):
-                    other._store(i, j, 0.0)
-                    if idx < self.size:
-                        other._store(i, j, flat._load(0, idx))
-                        idx += 1
+            memcpy(other._buf.ptr, self._buf.ptr, self.size)
+            for i in range(self.size, other.size):
+                other._buf.ptr[i] = 0.0
             self = other
         else:
             self.shape[0] = shape[0]
             self.shape[1] = shape[1]
             self.size = shape[0] * shape[1]
+            self.strides[0] = shape[1]
 
     fn round(self, decimals: Int) raises -> Self:
         return numojo.math.rounding.round(self, decimals=decimals)
