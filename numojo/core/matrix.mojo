@@ -1124,8 +1124,13 @@ struct Matrix[dtype: DType = DType.float64](
         Change shape and size of matrix in-place.
         """
         if shape[0] * shape[1] > self.size:
-            var other = Self(shape=shape, order=self.order())
-            memcpy(other._buf.ptr, self._buf.ptr, self.size)
+            var other = Self(shape=shape, order="C")
+            if self.flags.F_CONTIGUOUS:
+                var temp = self.reorder_layout()
+                memcpy(other._buf.ptr, temp._buf.ptr, self.size)
+                other = other.reorder_layout()
+            else:
+                memcpy(other._buf.ptr, self._buf.ptr, self.size)
             for i in range(self.size, other.size):
                 other._buf.ptr[i] = 0
             self = other
@@ -1133,7 +1138,10 @@ struct Matrix[dtype: DType = DType.float64](
             self.shape[0] = shape[0]
             self.shape[1] = shape[1]
             self.size = shape[0] * shape[1]
-            self.strides[0] = shape[1]
+            if self.flags.F_CONTIGUOUS:
+                self.strides[1] = shape[0]
+            else:
+                self.strides[0] = shape[1]
 
     fn round(self, decimals: Int) raises -> Self:
         return numojo.math.rounding.round(self, decimals=decimals)
