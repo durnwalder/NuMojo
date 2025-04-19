@@ -57,7 +57,7 @@ def test_manipulation():
     )
 
     _ = A.resize((1000, 100))
-    Anp = Anp.resize((1000, 100))
+    _ = Anp.resize((1000, 100))
     check_matrices_equal(
         A,
         Anp,
