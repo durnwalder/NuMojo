@@ -398,7 +398,9 @@ fn broadcast_to[
 
 fn broadcast_to[
     dtype: DType
-](A: Matrix[dtype], shape: Tuple[Int, Int]) raises -> Matrix[dtype]:
+](
+    A: Matrix[dtype], shape: Tuple[Int, Int], override_order: String = ""
+) raises -> Matrix[dtype]:
     """
     Broadcasts the vector to the given shape.
 
@@ -429,12 +431,17 @@ fn broadcast_to[
     Unhandled exception caught during execution: Cannot broadcast shape 2x2 to shape 4x2!
     ```
     """
+    var ord: String
+    if override_order == "":
+        ord = A.order()
+    else:
+        ord = override_order
 
-    var B = Matrix[dtype](shape, order=A.order())
+    var B = Matrix[dtype](shape, order=ord)
     if (A.shape[0] == shape[0]) and (A.shape[1] == shape[1]):
-        B = A
+        return A
     elif (A.shape[0] == 1) and (A.shape[1] == 1):
-        B = Matrix.full[dtype](shape, A[0, 0], order=A.order())
+        B = Matrix.full[dtype](shape, A[0, 0], order=ord)
     elif (A.shape[0] == 1) and (A.shape[1] == shape[1]):
         for i in range(shape[0]):
             memcpy(
